@@ -139,3 +139,20 @@ Três funções `SECURITY DEFINER` aparecem no advisor e devem continuar como es
   recusar um relato porque a tabela de contadores teve um soluço. **Na consulta de
   protocolo (Fase 3) a decisão precisa ser a oposta** — falhar aberto ali entregaria o
   bypass do limite a quem conseguisse derrubar a função.
+
+### Rate limit: a assimetria é deliberada
+
+`src/lib/ratelimit.ts` expõe duas formas, e a diferença é de projeto, não descuido:
+
+| | Onde | Em falha da função |
+|---|---|---|
+| `consume()` | envio de relato, pedido de URL de upload | **falha aberto** |
+| `consumeStrict()` | consulta de protocolo, mensagem, complemento | **falha fechado** (503) |
+
+No envio, recusar um relato porque a tabela de contadores teve um soluço seria o dano maior —
+um canal de denúncia não pode fechar a porta. Na consulta é o oposto: ali o limitador é a
+única coisa entre uma chave de 75 bits e a força bruta, e falhar aberto entregaria o bypass a
+quem conseguisse derrubar a função.
+
+Na consulta o balde por protocolo (5/h) é consumido **antes** da busca no banco. Se fosse
+depois, o próprio limitador viraria oráculo de existência de protocolo.

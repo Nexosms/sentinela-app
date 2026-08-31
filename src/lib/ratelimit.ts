@@ -48,20 +48,31 @@ export function userAgentHash(request: Request): string | null {
  */
 
 /**
- * Consome uma unidade do balde. Devolve `true` quando a requisição é
- * permitida. A janela é um `interval` do Postgres ("00:15:00").
- *
- * Em erro de infraestrutura devolve `true` (fail-open): o canal de denúncia
- * não pode fechar porque a tabela de contadores teve um soluço. O abuso é
- * contido também pela plataforma; a indisponibilidade seria o dano maior.
+ * Resultado explícito do balde. `unavailable` é o erro de infraestrutura, e
+ * cada rota decide o que fazer com ele — ver a assimetria abaixo.
  */
-export async function consume(
+export type ConsumeResult = "allowed" | "limited" | "unavailable";
+
+/**
+ * Consome uma unidade do balde e devolve o resultado SEM decidir por quem
+ * chamou. A janela é um `interval` do Postgres ("00:15:00").
+ *
+ * ASSIMETRIA DELIBERADA entre as rotas públicas:
+ *
+ *  - No ENVIO do relato (`consume`, fail-open) um erro de RPC não pode fechar
+ *    o canal: recusar uma denúncia porque a tabela de contadores teve um
+ *    soluço é o dano maior.
+ *  - Na CONSULTA por protocolo (`consumeStrict`, fail-closed) o limitador é a
+ *    única coisa entre a chave de 75 bits e a força bruta. Falhar aberto ali
+ *    entregaria o bypass do limitador a quem conseguisse derrubar a função.
+ */
+export async function consumeStrict(
   supabase: AdminClient,
   bucket: string,
   key: string,
   limit: number,
   window: string,
-): Promise<boolean> {
+): Promise<ConsumeResult> {
   const { data, error } = await supabase.rpc("consume_rate_limit", {
     p_bucket: bucket,
     p_key_hash: hashKey(key),
@@ -70,9 +81,23 @@ export async function consume(
   });
   if (error) {
     console.error("[ratelimit] balde %s indisponível: %s", bucket, error.message);
-    return true;
+    return "unavailable";
   }
-  return data !== false;
+  return data === false ? "limited" : "allowed";
+}
+
+/**
+ * Variante fail-open: devolve `true` quando a requisição é permitida E também
+ * quando o balde está indisponível. Ver a assimetria em `consumeStrict`.
+ */
+export async function consume(
+  supabase: AdminClient,
+  bucket: string,
+  key: string,
+  limit: number,
+  window: string,
+): Promise<boolean> {
+  return (await consumeStrict(supabase, bucket, key, limit, window)) !== "limited";
 }
 
 /** Resposta padrão de estouro de limite, com o cabeçalho que o cliente espera. */

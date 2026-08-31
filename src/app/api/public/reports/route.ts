@@ -1,13 +1,14 @@
-import { randomUUID } from "node:crypto";
-
 import { createAdminClient } from "@/lib/supabase/admin";
 import {
   submitReportSchema,
   fieldErrors,
-  ALLOWED_MIME,
-  MAX_FILE_BYTES,
   type SubmitReportInput,
 } from "@/lib/report/schema";
+import {
+  attachEvidence,
+  verifyEvidenceTickets,
+  type VerifiedEvidence,
+} from "@/app/api/public/_lib/evidence";
 import { generateSecret, hashSecret } from "@/lib/report/secret";
 import { recordAudit, type AdminClient } from "@/lib/audit";
 import { clientIp, consume, hashKey, tooManyRequests, userAgentHash } from "@/lib/ratelimit";
@@ -32,22 +33,6 @@ const RATE_WINDOW = "01:00:00";
 
 type RiskLevel = Database["public"]["Enums"]["risk_level"];
 const RISK_ORDER: RiskLevel[] = ["baixo", "moderado", "alto", "critico"];
-
-const EXT_BY_MIME: Record<string, string> = {
-  "image/jpeg": "jpg",
-  "image/png": "png",
-  "image/webp": "webp",
-  "image/heic": "heic",
-  "application/pdf": "pdf",
-  "text/plain": "txt",
-  "application/msword": "doc",
-  "application/vnd.openxmlformats-officedocument.wordprocessingml.document": "docx",
-  "audio/mpeg": "mp3",
-  "audio/mp4": "m4a",
-  "audio/ogg": "ogg",
-  "video/mp4": "mp4",
-  "video/webm": "webm",
-};
 
 /**
  * DECISÃO DE IDEMPOTÊNCIA — reemissão dentro de uma janela curta.
@@ -80,16 +65,6 @@ const EXT_BY_MIME: Record<string, string> = {
 const REPLAY_WINDOW_MS = 30 * 60 * 1000;
 
 type OrgRow = { id: string; sla_triagem_hours: number };
-
-/** Evidência já conferida contra o Storage e contra o ticket de upload. */
-type VerifiedEvidence = {
-  ticketId: string;
-  stagingPath: string;
-  filename: string;
-  mime: string;
-  size: number;
-  sha256: string | null;
-};
 
 function contactKind(contact: string): string {
   if (contact.includes("@")) return "email";
@@ -209,7 +184,12 @@ export async function POST(request: Request): Promise<Response> {
   // é motivo para recusar a submissão inteira acontece aqui.
   let verified: VerifiedEvidence[];
   try {
-    verified = await verifyEvidence(supabase, org.id, input);
+    verified = await verifyEvidenceTickets(
+      supabase,
+      org.id,
+      input.evidence,
+      input.uploadSessionId ? `staging/${input.uploadSessionId}/` : null,
+    );
   } catch (err) {
     return Response.json(
       {
@@ -284,7 +264,13 @@ export async function POST(request: Request): Promise<Response> {
     if (error) console.error("[reports] identidade: %s", error.message);
   }
 
-  const attached = await attachEvidence(supabase, org.id, report.id, verified);
+  const attached = await attachEvidence(
+    supabase,
+    org.id,
+    report.id,
+    verified,
+    "Recebida no envio do relato.",
+  );
 
   await recordAudit(supabase, {
     orgId: org.id,
@@ -298,7 +284,7 @@ export async function POST(request: Request): Promise<Response> {
       risk,
       category_count: categoryIds.length,
       evidence_declared: verified.length,
-      evidence_attached: attached,
+      evidence_attached: attached.length,
       retaliation: input.retaliation,
       urgent: input.urgent,
       source: "web",
@@ -461,81 +447,6 @@ async function replay(
 }
 
 /**
- * Confere cada caminho declarado contra (a) um ticket de upload não consumido
- * da MESMA organização e (b) o objeto de verdade no Storage.
- *
- * Sem o ticket, um cliente poderia declarar o caminho do anexo de outro relato
- * e anexá-lo ao seu. Sem reler o objeto, `size` e `mime` seriam os números que
- * o próprio cliente inventou. Lança em qualquer irregularidade — chamada
- * sempre ANTES do INSERT do relato.
- */
-async function verifyEvidence(
-  supabase: AdminClient,
-  orgId: string,
-  input: SubmitReportInput,
-): Promise<VerifiedEvidence[]> {
-  if (input.evidence.length === 0) return [];
-
-  const paths = input.evidence.map(e => e.path);
-  if (new Set(paths).size !== paths.length) {
-    throw new Error("Anexo repetido.");
-  }
-
-  const { data: tickets, error } = await supabase
-    .from("evidence_upload_tickets")
-    .select("id, storage_path, filename, expires_at, consumed_by_report")
-    .eq("org_id", orgId)
-    .in("storage_path", paths);
-
-  if (error) {
-    console.error("[reports] tickets: %s", error.message);
-    throw new Error("Não foi possível conferir os anexos.");
-  }
-
-  const byPath = new Map((tickets ?? []).map(t => [t.storage_path, t]));
-  const out: VerifiedEvidence[] = [];
-
-  for (const declared of input.evidence) {
-    const ticket = byPath.get(declared.path);
-    if (!ticket) throw new Error("Anexo não reconhecido. Envie o arquivo novamente.");
-    if (ticket.consumed_by_report) throw new Error("Anexo já usado em outro relato.");
-    if (new Date(ticket.expires_at).getTime() < Date.now()) {
-      throw new Error("O prazo do anexo expirou. Envie o arquivo novamente.");
-    }
-    if (input.uploadSessionId && !declared.path.startsWith(`staging/${input.uploadSessionId}/`)) {
-      throw new Error("Anexo fora da sessão de envio.");
-    }
-
-    const { data: info, error: infoError } = await supabase.storage
-      .from("evidence")
-      .info(declared.path);
-
-    if (infoError || !info) {
-      throw new Error("Um dos arquivos não chegou ao servidor. Envie novamente.");
-    }
-
-    const size = info.size ?? 0;
-    const mime = info.contentType ?? "";
-    if (size <= 0) throw new Error("Arquivo vazio.");
-    if (size > MAX_FILE_BYTES) throw new Error("Arquivo acima de 15 MB.");
-    if (!(ALLOWED_MIME as readonly string[]).includes(mime)) {
-      throw new Error("Tipo de arquivo não aceito.");
-    }
-
-    out.push({
-      ticketId: ticket.id,
-      stagingPath: declared.path,
-      filename: ticket.filename,
-      mime,
-      size,
-      sha256: declared.sha256 ?? null,
-    });
-  }
-
-  return out;
-}
-
-/**
  * Uma caixa marcada duas vezes no cliente não pode derrubar a submissão
  * inteira — daí o `ignoreDuplicates` (ON CONFLICT DO NOTHING).
  */
@@ -554,72 +465,6 @@ async function attachCategories(
     .from("report_categories")
     .upsert(rows, { onConflict: "report_id,category_id", ignoreDuplicates: true });
   if (error) console.error("[reports] categorias: %s", error.message);
-}
-
-/**
- * Move cada objeto de `staging/` para `{orgId}/{reportId}/…` e registra a
- * cadeia de custódia. Best-effort por arquivo: o relato já existe e a pessoa
- * já vai receber o protocolo. O que falhar fica em staging e é apagado pelo
- * cron; a diferença entre declarado e anexado fica na trilha de auditoria.
- */
-async function attachEvidence(
-  supabase: AdminClient,
-  orgId: string,
-  reportId: string,
-  items: VerifiedEvidence[],
-): Promise<number> {
-  let attached = 0;
-
-  for (const item of items) {
-    const evidenceId = randomUUID();
-    const ext = EXT_BY_MIME[item.mime] ?? "bin";
-    const finalPath = `${orgId}/${reportId}/${evidenceId}.${ext}`;
-
-    const { error: moveError } = await supabase.storage
-      .from("evidence")
-      .move(item.stagingPath, finalPath);
-    if (moveError) {
-      console.error("[reports] move %s: %s", item.stagingPath, moveError.message);
-      continue;
-    }
-
-    const { error: rowError } = await supabase.from("report_evidence").insert({
-      id: evidenceId,
-      org_id: orgId,
-      report_id: reportId,
-      storage_path: finalPath,
-      filename: item.filename,
-      mime_type: item.mime,
-      size_bytes: item.size,
-      sha256_client: item.sha256,
-      uploaded_by_type: "reporter",
-    });
-    if (rowError) {
-      console.error("[reports] report_evidence: %s", rowError.message);
-      continue;
-    }
-
-    const { error: custodyError } = await supabase.from("evidence_custody_events").insert({
-      org_id: orgId,
-      evidence_id: evidenceId,
-      action: "coletada",
-      actor_label: "Denunciante (canal público)",
-      hash_at_event: item.sha256,
-      notes: "Recebida no envio do relato.",
-    });
-    if (custodyError) console.error("[reports] custódia: %s", custodyError.message);
-
-    const { error: ticketError } = await supabase
-      .from("evidence_upload_tickets")
-      .update({ consumed_by_report: reportId })
-      .eq("id", item.ticketId)
-      .eq("org_id", orgId);
-    if (ticketError) console.error("[reports] ticket consumido: %s", ticketError.message);
-
-    attached += 1;
-  }
-
-  return attached;
 }
 
 /**

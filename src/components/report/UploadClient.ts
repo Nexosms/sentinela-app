@@ -1,6 +1,7 @@
 "use client";
 
 import { createClient } from "@/lib/supabase/client";
+import type { TrackedEvidence } from "@/lib/report/tracking";
 import {
   ALLOWED_MIME,
   MAX_FILE_BYTES,
@@ -19,6 +20,27 @@ import {
  */
 
 const EVIDENCE_BUCKET = "evidence";
+
+const COMPLEMENT_URL = "/api/public/evidence/complement";
+
+/**
+ * As rotas do acompanhamento devolvem `{error, message}`: a frase para a pessoa
+ * está em `message`; `error` é código de máquina e nunca vai para a tela.
+ */
+async function readComplementError(response: Response): Promise<string> {
+  const fallback =
+    response.status === 401
+      ? "Sua sessão de acompanhamento expirou. Consulte o protocolo novamente."
+      : "Não foi possível anexar os arquivos ao caso. Nada foi adicionado.";
+  try {
+    const body = (await response.json()) as { message?: string; fieldErrors?: Record<string, string> };
+    if (typeof body?.message === "string" && body.message) return body.message;
+    const first = body?.fieldErrors ? Object.values(body.fieldErrors)[0] : null;
+    return first || fallback;
+  } catch {
+    return fallback;
+  }
+}
 
 /** Já validado em `validatePickedFiles`; o estreitamento é só de tipo. */
 type AllowedMime = (typeof ALLOWED_MIME)[number];
@@ -108,37 +130,32 @@ export type UploadResult = {
   evidence: UploadedEvidenceItem[];
 };
 
-export async function uploadEvidence(
-  orgSlug: string,
+/** Hash de todos os candidatos, com progresso. Comum aos dois fluxos. */
+async function hashAll(
   candidates: UploadCandidate[],
   onProgress: UploadProgress,
-): Promise<UploadResult> {
+): Promise<Map<string, string>> {
   const hashes = new Map<string, string>();
   for (const candidate of candidates) {
     onProgress(candidate.clientId, 5, "hashing");
     hashes.set(candidate.clientId, await sha256OfFile(candidate.file));
     onProgress(candidate.clientId, 35, "hashed");
   }
+  return hashes;
+}
 
-  const response = await fetch("/api/public/evidence/upload-url", {
-    method: "POST",
-    headers: { "content-type": "application/json" },
-    body: JSON.stringify({
-      orgSlug,
-      files: candidates.map(candidate => ({
-        clientId: candidate.clientId,
-        name: candidate.file.name,
-        size: candidate.file.size,
-        mime: candidate.file.type,
-      })),
-    }),
-  });
-
-  if (!response.ok) {
-    throw new Error(await readError(response, "Não foi possível preparar o envio dos anexos."));
-  }
-
-  const { uploadSessionId, items } = (await response.json()) as UploadUrlResponse;
+/**
+ * Sobe os bytes para os destinos assinados e devolve os metadados que o
+ * servidor vai reivindicar. Compartilhado pelo envio do relato e pelo
+ * complemento no acompanhamento: os dois usam o mesmo bucket, o mesmo
+ * `uploadToSignedUrl` e a mesma regra de "nada é anexado sem hash".
+ */
+async function pushToStorage(
+  candidates: UploadCandidate[],
+  items: UploadUrlItem[],
+  hashes: Map<string, string>,
+  onProgress: UploadProgress,
+): Promise<UploadedEvidenceItem[]> {
   const byClientId = new Map(items.map(item => [item.clientId, item]));
   const supabase = createClient();
   const evidence: UploadedEvidenceItem[] = [];
@@ -166,7 +183,39 @@ export async function uploadEvidence(
     });
   }
 
-  return { uploadSessionId, evidence };
+  return evidence;
+}
+
+export async function uploadEvidence(
+  orgSlug: string,
+  candidates: UploadCandidate[],
+  onProgress: UploadProgress,
+): Promise<UploadResult> {
+  const hashes = await hashAll(candidates, onProgress);
+
+  const response = await fetch("/api/public/evidence/upload-url", {
+    method: "POST",
+    headers: { "content-type": "application/json" },
+    body: JSON.stringify({
+      orgSlug,
+      files: candidates.map(candidate => ({
+        clientId: candidate.clientId,
+        name: candidate.file.name,
+        size: candidate.file.size,
+        mime: candidate.file.type,
+      })),
+    }),
+  });
+
+  if (!response.ok) {
+    throw new Error(await readError(response, "Não foi possível preparar o envio dos anexos."));
+  }
+
+  const { uploadSessionId, items } = (await response.json()) as UploadUrlResponse;
+  return {
+    uploadSessionId,
+    evidence: await pushToStorage(candidates, items, hashes, onProgress),
+  };
 }
 
 export type SubmitResponse = {
@@ -193,4 +242,47 @@ export async function submitReport(body: SubmitReportInput): Promise<SubmitRespo
   }
 
   return (await response.json()) as SubmitResponse;
+}
+
+/**
+ * Complemento de evidências DEPOIS do envio, a partir de /acompanhar.
+ *
+ * Mesma mecânica do relato — hash no navegador, bytes direto para o Storage —
+ * com duas diferenças que vêm da rota: não há `orgSlug` (o cookie de sessão já
+ * diz qual é o relato) e as duas etapas moram no MESMO endpoint, separadas por
+ * `action`: "sign" pega as URLs assinadas, "attach" reivindica os objetos.
+ */
+export async function complementEvidence(
+  candidates: UploadCandidate[],
+  onProgress: UploadProgress,
+): Promise<TrackedEvidence[]> {
+  const hashes = await hashAll(candidates, onProgress);
+
+  const signed = await fetch(COMPLEMENT_URL, {
+    method: "POST",
+    headers: { "content-type": "application/json" },
+    body: JSON.stringify({
+      action: "sign",
+      files: candidates.map(candidate => ({
+        clientId: candidate.clientId,
+        name: candidate.file.name,
+        size: candidate.file.size,
+        mime: candidate.file.type,
+      })),
+    }),
+  });
+  if (!signed.ok) throw new Error(await readComplementError(signed));
+
+  const { items } = (await signed.json()) as { items: UploadUrlItem[] };
+  const uploads = await pushToStorage(candidates, items, hashes, onProgress);
+
+  const attached = await fetch(COMPLEMENT_URL, {
+    method: "POST",
+    headers: { "content-type": "application/json" },
+    body: JSON.stringify({ action: "attach", uploads }),
+  });
+  if (!attached.ok) throw new Error(await readComplementError(attached));
+
+  const body = (await attached.json()) as { evidence: TrackedEvidence[] };
+  return body.evidence;
 }

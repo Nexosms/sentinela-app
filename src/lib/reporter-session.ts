@@ -11,12 +11,18 @@ import { createHmac, timingSafeEqual } from "node:crypto";
  * verificação bem-sucedida, gravamos um cookie assinado que carrega apenas o
  * id do relato — nunca o segredo, nunca o protocolo.
  *
- * O cookie é HttpOnly (JS da página não lê), Secure, SameSite=Lax e restrito a
- * Path=/acompanhar, então não acompanha nenhuma outra rota do site.
+ * O cookie é HttpOnly (JS da página não lê), Secure e SameSite=Lax.
+ *
+ * Path=/ e não /acompanhar: a tela vive em /acompanhar mas conversa com
+ * /api/public/track/case, /api/public/messages e /api/public/evidence/
+ * complement. O navegador só envia o cookie para caminhos sob `Path`, então um
+ * cookie preso a /acompanhar nunca chegaria às rotas que precisam dele. O que
+ * protege a sessão é HttpOnly + SameSite=Lax + a validade curta (30 min
+ * deslizantes, teto absoluto de 2 h), não o escopo de caminho.
  */
 
 export const COOKIE_NAME = "sentinela_rt";
-export const COOKIE_PATH = "/acompanhar";
+export const COOKIE_PATH = "/";
 
 /** Validade de cada emissão. Renovada a cada uso (deslizante). */
 const MAX_AGE_SECONDS = 1800;

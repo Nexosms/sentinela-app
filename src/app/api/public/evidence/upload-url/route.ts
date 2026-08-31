@@ -1,9 +1,10 @@
 import { randomUUID } from "node:crypto";
 
 import { createAdminClient } from "@/lib/supabase/admin";
-import { uploadUrlRequestSchema, fieldErrors, ALLOWED_MIME } from "@/lib/report/schema";
+import { uploadUrlRequestSchema, fieldErrors } from "@/lib/report/schema";
 import { recordAudit } from "@/lib/audit";
 import { clientIp, consume, hashKey, tooManyRequests, userAgentHash } from "@/lib/ratelimit";
+import { issueUploadTickets } from "@/app/api/public/_lib/evidence";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -18,34 +19,24 @@ export const dynamic = "force-dynamic";
  * Os arquivos vão para `staging/`, fora de qualquer relato. Só o POST de
  * /api/public/reports move o objeto para `{orgId}/{reportId}/…`; o que nunca
  * for reivindicado é apagado pelo cron de limpeza.
+ *
+ * O complemento de evidência de um relato já conhecido é outra rota:
+ * /api/public/evidence/complement, que não pede orgSlug porque o cookie de
+ * sessão já diz de qual relato se trata.
  */
 
 /** Bucket de abuso: 40 tokens por IP a cada hora (≈7 envios completos). */
 const RATE_LIMIT = 40;
 const RATE_WINDOW = "01:00:00";
 
-/** Extensão inferida do MIME declarado, nunca do nome enviado pelo cliente. */
-const EXT_BY_MIME: Record<(typeof ALLOWED_MIME)[number], string> = {
-  "image/jpeg": "jpg",
-  "image/png": "png",
-  "image/webp": "webp",
-  "image/heic": "heic",
-  "application/pdf": "pdf",
-  "text/plain": "txt",
-  "application/msword": "doc",
-  "application/vnd.openxmlformats-officedocument.wordprocessingml.document": "docx",
-  "audio/mpeg": "mp3",
-  "audio/mp4": "m4a",
-  "audio/ogg": "ogg",
-  "video/mp4": "mp4",
-  "video/webm": "webm",
-};
-
 export async function POST(request: Request): Promise<Response> {
   const supabase = createAdminClient();
-  const ipHash = hashKey(clientIp(request));
+  const ip = clientIp(request);
+  const ipHash = hashKey(ip);
 
-  if (!(await consume(supabase, "evidence_upload_url", clientIp(request), RATE_LIMIT, RATE_WINDOW))) {
+  // Fail-open deliberado: ver a assimetria documentada em @/lib/ratelimit.
+  // Aqui um soluço da tabela de contadores não pode impedir um envio.
+  if (!(await consume(supabase, "evidence_upload_url", ip, RATE_LIMIT, RATE_WINDOW))) {
     return tooManyRequests(600);
   }
 
@@ -81,38 +72,19 @@ export async function POST(request: Request): Promise<Response> {
   }
 
   const uploadSessionId = randomUUID();
-  const items: Array<{ clientId: string; path: string; token: string }> = [];
 
-  for (const file of input.files) {
-    const path = `staging/${uploadSessionId}/${randomUUID()}.${EXT_BY_MIME[file.mime]}`;
-
-    // O ticket é gravado ANTES do token: se o insert falhar, nenhuma URL de
-    // escrita é entregue, e nada fica órfão no bucket.
-    const { error: ticketError } = await supabase.from("evidence_upload_tickets").insert({
-      org_id: org.id,
-      storage_path: path,
-      filename: file.name,
-      mime_type: file.mime,
-      // Número declarado pelo cliente, guardado só para conferência. O tamanho
-      // que vale é o relido do Storage na submissão.
-      size_bytes: file.size,
-      ip_hash: ipHash,
-    });
-    if (ticketError) {
-      console.error("[upload-url] ticket: %s", ticketError.message);
-      return Response.json({ error: "server_error" }, { status: 500 });
-    }
-
-    const { data: signed, error: signError } = await supabase.storage
-      .from("evidence")
-      .createSignedUploadUrl(path);
-
-    if (signError || !signed) {
-      console.error("[upload-url] assinatura: %s", signError?.message ?? "sem dados");
-      return Response.json({ error: "server_error" }, { status: 500 });
-    }
-
-    items.push({ clientId: file.clientId, path, token: signed.token });
+  let items;
+  try {
+    items = await issueUploadTickets(
+      supabase,
+      org.id,
+      input.files,
+      `staging/${uploadSessionId}`,
+      ipHash,
+    );
+  } catch (err) {
+    console.error("[upload-url] %s", err instanceof Error ? err.message : String(err));
+    return Response.json({ error: "server_error" }, { status: 500 });
   }
 
   await recordAudit(supabase, {
