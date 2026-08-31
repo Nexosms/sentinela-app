@@ -2203,6 +2203,18 @@ export type Database = {
       }
     }
     Functions: {
+      consume_rate_limit: {
+        Args: {
+          p_bucket: string
+          p_key_hash: string
+          p_limit: number
+          p_window: string
+        }
+        Returns: boolean
+      }
+      expire_upload_tickets: { Args: never; Returns: string[] }
+      get_report_catalog: { Args: { p_org_slug: string }; Returns: Json }
+      prune_rate_limits: { Args: never; Returns: undefined }
       reveal_identity: {
         Args: { p_report: string }
         Returns: {

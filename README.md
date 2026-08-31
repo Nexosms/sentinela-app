@@ -62,7 +62,10 @@ Fase 0 (fundação Vercel) concluída. Ver o plano completo das fases 1–7.
 ## `_legacy/`
 
 Protótipo original (Cloudflare Workers + D1 + R2, construído no ChatGPT Sites), mantido fora do
-build e do lint apenas como referência do JSX durante o porte. **Apagar ao fim da Fase 2.**
+build e do lint apenas como referência do JSX durante o porte.
+
+Ainda contém o JSX de duas telas não portadas: `Tracking` (Fase 3) e o painel `AdminPanel` /
+`Dashboard` / `Inbox` (Fase 4). **Apagar ao fim da Fase 4**, não antes.
 
 ## Migrações do banco
 
@@ -123,3 +126,16 @@ Três funções `SECURITY DEFINER` aparecem no advisor e devem continuar como es
 - `verify_audit_chain` — precisa ser DEFINER para ler a cadeia inteira; sob RLS, linhas
   ocultas apareceriam como quebras falsas. Faz a autorização por dentro (`admin`/`comite`).
 - `rls_auto_enable` — do próprio Supabase, event trigger. EXECUTE já revogado.
+
+## Observações operacionais descobertas em execução
+
+- **Apagar linha não apaga arquivo.** Remover um `report` deixa o objeto órfão no bucket
+  `evidence`. O cron de retenção (Fase 7) precisa varrer o Storage, não só o banco.
+- **Relato de teste não sai por SQL comum.** Os RULEs de imutabilidade em `audit_events`
+  fazem a FK `ON DELETE SET NULL` falhar. A limpeza exige
+  `begin; set local session_replication_role = replica; … commit;` — escopo de sessão,
+  sem DDL, os RULEs continuam intactos. É o comportamento desejado: a trilha resiste.
+- **Rate limit falha aberto.** No envio isso está certo: um canal de denúncia não pode
+  recusar um relato porque a tabela de contadores teve um soluço. **Na consulta de
+  protocolo (Fase 3) a decisão precisa ser a oposta** — falhar aberto ali entregaria o
+  bypass do limite a quem conseguisse derrubar a função.

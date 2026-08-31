@@ -1,18 +1,41 @@
 import "server-only";
 
-import { createAdminClient } from "@/lib/supabase/admin";
+import { z } from "zod";
+
 import { publicEnv } from "@/lib/env";
+import { createClient } from "@/lib/supabase/server";
 
 /**
  * Catálogo público do formulário de relato: unidades da organização e
  * categorias globais.
  *
- * Por que o cliente de serviço e não `@/lib/supabase/server`: o denunciante não
- * tem sessão, e `anon` não tem GRANT nenhum no schema `public` — a consulta sob
- * RLS falharia antes mesmo de chegar a uma policy. A leitura aqui é
- * deliberadamente estreita (duas tabelas, só colunas de rótulo, filtradas pela
- * organização do slug público) e não recebe nenhuma entrada do usuário.
+ * O denunciante não tem sessão e `anon` não tem GRANT no schema `public`, então
+ * as tabelas não podem ser lidas direto. A leitura passa por
+ * `public.get_report_catalog(p_org_slug)` (migração 020), uma função executável
+ * por `anon` que devolve apenas rótulos. Assim a service role fica confinada às
+ * rotas de escrita em `api/public/**` e nunca entra no caminho de renderização.
  */
+
+const catalogSchema = z.object({
+  org: z.object({ id: z.uuid(), slug: z.string(), name: z.string() }),
+  units: z.array(
+    z.object({
+      id: z.uuid(),
+      name: z.string(),
+      city: z.string().nullable(),
+      state_uf: z.string().nullable(),
+    }),
+  ),
+  categories: z.array(
+    z.object({
+      id: z.uuid(),
+      code: z.string(),
+      label_pt: z.string(),
+      group_key: z.string(),
+      requires_specification: z.boolean(),
+    }),
+  ),
+});
 
 export type OrgUnitOption = {
   id: string;
@@ -29,6 +52,7 @@ export type CategoryOption = {
 };
 
 export type ReportCatalog = {
+  orgSlug: string;
   units: OrgUnitOption[];
   categories: CategoryOption[];
 };
@@ -36,46 +60,23 @@ export type ReportCatalog = {
 export async function loadReportCatalog(
   orgSlug: string = publicEnv.defaultOrgSlug,
 ): Promise<ReportCatalog> {
-  const supabase = createAdminClient();
+  const supabase = await createClient();
+  const { data, error } = await supabase.rpc("get_report_catalog", { p_org_slug: orgSlug });
 
-  const { data: org, error: orgError } = await supabase
-    .from("organizations")
-    .select("id")
-    .eq("slug", orgSlug)
-    .maybeSingle();
+  if (error) throw new Error(`Falha ao carregar o catálogo do relato: ${error.message}`);
 
-  if (orgError) throw new Error(`Falha ao carregar a organização: ${orgError.message}`);
-  if (!org) throw new Error(`Organização "${orgSlug}" não encontrada.`);
-
-  const [unitsResult, categoriesResult] = await Promise.all([
-    supabase
-      .from("org_units")
-      .select("id, name, city, state_uf")
-      // Escopo de organização explícito: a RLS está fora neste cliente.
-      .eq("org_id", org.id)
-      .eq("is_active", true)
-      .order("sort_order", { ascending: true }),
-    supabase
-      .from("categories")
-      .select("id, code, label_pt, group_key, requires_specification")
-      .is("org_id", null)
-      .eq("is_active", true)
-      .order("sort_order", { ascending: true }),
-  ]);
-
-  if (unitsResult.error) {
-    throw new Error(`Falha ao carregar as unidades: ${unitsResult.error.message}`);
-  }
-  if (categoriesResult.error) {
-    throw new Error(`Falha ao carregar as categorias: ${categoriesResult.error.message}`);
+  const parsed = catalogSchema.safeParse(data);
+  if (!parsed.success) {
+    throw new Error(`Catálogo do relato em formato inesperado para "${orgSlug}".`);
   }
 
   return {
-    units: (unitsResult.data ?? []).map(unit => ({
+    orgSlug: parsed.data.org.slug,
+    units: parsed.data.units.map(unit => ({
       id: unit.id,
       label: unit.city ? `${unit.name} · ${unit.city}` : unit.name,
     })),
-    categories: (categoriesResult.data ?? []).map(category => ({
+    categories: parsed.data.categories.map(category => ({
       id: category.id,
       code: category.code,
       label: category.label_pt,
