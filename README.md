@@ -102,3 +102,24 @@ Aplicadas via MCP do Supabase, em ordem. `supabase migration list` no projeto
   e os demais tokens com `''`. NULL quebra o login com
   `converting NULL to string is unsupported`. Na aplicação, use sempre a Admin
   API (`inviteUserByEmail`).
+
+## Pendências no painel do Supabase (ação manual)
+
+Não dá para configurar por migração; precisam ser feitas no dashboard antes de ir ao ar:
+
+1. **Authentication → Providers → Email → desabilitar "Enable signups".** O acesso é
+   exclusivamente por convite; com signup aberto qualquer pessoa cria conta.
+2. **Authentication → Policies → habilitar "Leaked password protection"** (checagem
+   contra o HaveIBeenPwned). Apontado pelo advisor de segurança.
+3. **Remover o usuário de teste** `teste.admin@sentinela.local` antes da entrega.
+
+### Avisos de advisor que são intencionais
+
+Três funções `SECURITY DEFINER` aparecem no advisor e devem continuar como estão:
+
+- `get_report_catalog` — exposta a `anon` de propósito. Devolve só unidades e categorias
+  ativas, que já aparecem na página pública. A alternativa seria dar grant de tabela ao
+  `anon` (pior) ou usar a service role no render de página (pior ainda).
+- `verify_audit_chain` — precisa ser DEFINER para ler a cadeia inteira; sob RLS, linhas
+  ocultas apareceriam como quebras falsas. Faz a autorização por dentro (`admin`/`comite`).
+- `rls_auto_enable` — do próprio Supabase, event trigger. EXECUTE já revogado.
