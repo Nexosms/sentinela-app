@@ -57,7 +57,37 @@ denúncia, a chave, o IP em claro ou os campos de identidade — só referência
 
 ## Estado
 
-Fase 0 (fundação Vercel) concluída. Ver o plano completo das fases 1–7.
+| Fase | O que entrega | Situação |
+|---|---|---|
+| 0 | Fundação Next.js 16 na Vercel, landing, páginas legais, headers de segurança | **concluída** |
+| 1 | Supabase: 21 migrações, RLS, Auth por convite, shell do admin | **concluída** |
+| 2 | Envio de relato ponta a ponta, upload direto ao Storage, protocolo + chave | **concluída** |
+| 3 | Acompanhamento real: linha do tempo, caixa postal bidirecional, complemento | **concluída** |
+| 4 | Painel de denúncias real: caixa de entrada, detalhe, evidência, identidade | a fazer |
+| 5 | Investigações e planos de ação | a fazer |
+| 6 | Relatórios e indicadores NR-01 / CIPA | a fazer |
+| 7 | Auditoria, retenção, `reporter_api`, endurecimento final | a fazer |
+
+**As fases 0–3 já constituem o canal público completo** — o artefato que a Lei 14.457 exige.
+Podem ir ao ar antes do painel ficar pronto, com a triagem acontecendo pelo painel do
+Supabase como paliativo.
+
+O plano completo das 7 fases está em
+`~/.claude/plans/o-seguinte-foi-goofy-sparkle.md`.
+
+### O que a Fase 4 precisa construir
+
+Substituir os `ModulePlaceholder` de `/admin/denuncias` por: caixa de entrada lendo o banco com
+filtros por `searchParams` (server component, sem fetch no cliente), detalhe do caso com as 4
+abas vivas, mudança de status e atribuição por server action, mensagens staff→denunciante
+(escrevendo em `report_messages` com `internal` conforme o caso), download de evidência por URL
+assinada de 60 s com `Content-Disposition: attachment` **e registro obrigatório** em
+`data_access_log` + `evidence_custody_events`, revelação de identidade via
+`identity_access_grants` (justificativa de 20+ caracteres, validade ≤ 24 h) usando
+`public.reveal_identity()`, e o sino de notificações lendo `public.notifications`.
+
+O JSX de referência do painel está em `_legacy/ReportChannel.tsx` linhas 161–175
+(`AdminPanel`, `Dashboard`, `Inbox`, `Placeholder`).
 
 ## `_legacy/`
 
