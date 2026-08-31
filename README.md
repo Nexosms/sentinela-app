@@ -63,3 +63,42 @@ Fase 0 (fundação Vercel) concluída. Ver o plano completo das fases 1–7.
 
 Protótipo original (Cloudflare Workers + D1 + R2, construído no ChatGPT Sites), mantido fora do
 build e do lint apenas como referência do JSX durante o porte. **Apagar ao fim da Fase 2.**
+
+## Migrações do banco
+
+Aplicadas via MCP do Supabase, em ordem. `supabase migration list` no projeto
+`nomxwdcrgdblxcuoavnx` mostra o estado atual.
+
+| # | Migração |
+|---|---|
+| 001 | extensões, schema `app`, ENUMs, trigger `updated_at` |
+| 002 | organizações, unidades, perfis, membros, provisionamento no signup |
+| 003 | catálogo de categorias |
+| 004 | denúncias, identidade isolada, categorias N:N, histórico de status, impedimentos |
+| 005 | mensagens, evidências, cadeia de custódia, tickets de upload |
+| 006 | investigações, entrevistas, achados |
+| 007 | planos de ação e medidas com verificação de eficácia |
+| 008 | auditoria com cadeia de hash, log de acesso, grants de identidade, notificações |
+| 009 | funções auxiliares de RLS (`SECURITY DEFINER`) |
+| 010 | RLS ligada e todas as políticas |
+| 011 | proteção de identidade (break-glass) |
+| 012 | bucket `evidence` (privado, sem políticas — acesso só por URL assinada) |
+| 013 | rate limiting e expiração de tickets |
+| 014 | views de relatório e supressão de célula pequena |
+| 015 | endurecimento de grants (`anon` sem acesso ao schema public) |
+| 016 | seed das 19 categorias |
+| 017 | seed da organização placeholder |
+| 018 | correções dos advisors de segurança |
+| 019 | políticas `FOR ALL` separadas + índices de FK |
+
+### Armadilhas registradas
+
+- **Nunca** `alter table org_members force row level security` — o Postgres não
+  aplica RLS ao dono da tabela, e é isso que quebra a recursão nas funções
+  `SECURITY DEFINER`. `FORCE` traz a recursão de volta e trava o banco.
+- Em política, use `x = any ((select app.current_org_ids())::uuid[])`. Sem o
+  cast o parser lê `ANY(subquery)` e falha com `uuid = uuid[]`.
+- Ao criar usuário direto por SQL em `auth.users`, preencha `confirmation_token`
+  e os demais tokens com `''`. NULL quebra o login com
+  `converting NULL to string is unsupported`. Na aplicação, use sempre a Admin
+  API (`inviteUserByEmail`).
