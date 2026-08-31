@@ -12,7 +12,33 @@ const eslintConfig = defineConfig([
     "out/**",
     "build/**",
     "next-env.d.ts",
+    // Protótipo Cloudflare, mantido só como referência do JSX durante o porte.
+    "_legacy/**",
   ]),
+  // O service role nunca pode sair de onde é permitido (ver plano, §Clientes Supabase).
+  {
+    files: ["src/**/*.{ts,tsx}"],
+    ignores: [
+      "src/lib/supabase/admin.ts",
+      "src/app/api/public/**",
+      "src/app/api/cron/**",
+      "src/app/api/admin/invites/**",
+    ],
+    rules: {
+      "no-restricted-imports": [
+        "error",
+        {
+          patterns: [
+            {
+              group: ["**/supabase/admin", "@/lib/supabase/admin"],
+              message:
+                "O cliente service-role só pode ser importado em api/public/**, api/cron/** e api/admin/invites. Use @/lib/supabase/server (sob RLS).",
+            },
+          ],
+        },
+      ],
+    },
+  },
 ]);
 
 export default eslintConfig;

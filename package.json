@@ -6,7 +6,9 @@
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
-    "lint": "eslint"
+    "lint": "eslint",
+    "typecheck": "tsc --noEmit",
+    "verify": "npm run typecheck && npm run lint && npm run build"
   },
   "dependencies": {
     "next": "16.3.3",
@@ -21,5 +23,8 @@
     "eslint": "^9",
     "eslint-config-next": "16.3.3",
     "typescript": "^5"
+  },
+  "engines": {
+    "node": ">=20.9.0"
   }
 }
