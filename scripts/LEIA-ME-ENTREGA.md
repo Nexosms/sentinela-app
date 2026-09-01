@@ -42,6 +42,10 @@ Armadilha já paga: uma linha inserida à mão deixa `confirmation_token`, `reco
 `Database error querying schema` — o Go não converte `NULL` em `string`. Se precisar corrigir
 uma linha existente, `update auth.users set confirmation_token = '' ...` (string vazia, não nulo).
 
+> **Não há tela de convite ainda** (a rota `/api/admin/invites` é da Fase 7). Todo
+> usuário novo, inclusive o segundo e o terceiro da equipe, entra pelo painel do
+> Supabase e recebe o vínculo por SQL, como abaixo.
+
 Depois de criar o usuário, dê-lhe o vínculo:
 
 ```sql
@@ -53,9 +57,29 @@ select u.id, o.id, 'admin', 'active'
 
 ## 5. Preencher os dados da empresa
 
-Organização e unidades estão semeadas com placeholder. O cliente edita em
-**/admin/configuracoes** (razão social, nome fantasia, CNPJ, SLA, retenção) e
-**/admin/configuracoes/unidades**.
+> **A tela de Configurações ainda não existe** — é placeholder até a Fase 7. Hoje a
+> organização está semeada como `legal_name = 'Razão social a definir'` e
+> `trade_name = 'Organização'`, e esse nome aparece na barra lateral do painel. **Não
+> entregue assim.** Até a tela existir, corrija por SQL:
+
+```sql
+update public.organizations
+   set legal_name      = 'RAZÃO SOCIAL COMPLETA LTDA',
+       trade_name      = 'Nome que aparece no painel',
+       cnpj            = '00000000000000',
+       sla_triagem_hours  = 72,    -- prazo para a primeira análise
+       sla_apuracao_hours = 720,   -- prazo para concluir a apuração
+       retention_months   = 60,    -- retenção de casos encerrados
+       min_cell_size      = 5      -- supressão de célula pequena nos relatórios
+ where slug = 'sentinela';
+
+-- unidades: veja o que existe antes de mexer
+select id, name, city, state from public.org_units;
+```
+
+`min_cell_size` merece atenção: é o limiar abaixo do qual um relatório esconde a
+célula. Com 5, uma unidade com menos de 5 casos aparece como "—". Baixar esse número
+aumenta o risco de reidentificar quem denunciou.
 
 ## 6. Variáveis de ambiente na Vercel
 

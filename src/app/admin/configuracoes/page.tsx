@@ -9,7 +9,7 @@ export default function Page() {
       title="Configurações"
       eyebrow="ORGANIZAÇÃO"
       copy="Dados da organização, unidades, taxonomia de categorias e gestão da equipe por convite."
-      phase="EM CONSTRUÇÃO · FASE 3"
+      phase="EM CONSTRUÇÃO · FASE 7"
     />
   );
 }
