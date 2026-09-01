@@ -54,14 +54,15 @@ export const getStaffContext = cache(async (): Promise<StaffContext> => {
   };
 });
 
-const RANK: Record<AppRole, number> = { admin: 4, triagem: 3, investigador: 2, comite: 1 };
-
-export function hasAnyRole(role: AppRole, allowed: readonly AppRole[]): boolean {
-  return allowed.includes(role);
-}
-
-export function roleLabel(role: AppRole): string {
-  return { admin: "Administração", triagem: "Triagem", investigador: "Investigação", comite: "Comitê" }[role];
-}
-
-export { RANK as ROLE_RANK };
+/**
+ * Reexportados de `@/lib/admin/labels`, que NÃO tem `server-only`.
+ *
+ * Estes três são funções puras sobre um enum, mas moravam aqui — e este módulo
+ * começa com `import "server-only"`. Qualquer client component que importasse
+ * `roleLabel` daqui arrastava `server-only` para o bundle do navegador e
+ * derrubava o build de produção. O sintoma não aparece em build local com cache
+ * do `.next`: só na Vercel, que builda limpo.
+ *
+ * Em client component, importe de `@/lib/admin/labels` diretamente.
+ */
+export { hasAnyRole, roleLabel, ROLE_ORDER_RANK as ROLE_RANK } from "@/lib/admin/labels";

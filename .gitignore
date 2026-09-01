@@ -45,3 +45,6 @@ _legacy/
 # playwright
 /test-results/
 /playwright-report/
+
+# logs locais
+excalidraw.log

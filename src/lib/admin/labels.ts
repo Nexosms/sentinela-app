@@ -131,3 +131,25 @@ export function formatBytes(bytes: number): string {
   if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(0)} KB`;
   return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
 }
+
+export type AppRole = Enums["app_role"];
+
+export const ROLE_ORDER_RANK: Record<AppRole, number> = {
+  admin: 4,
+  triagem: 3,
+  investigador: 2,
+  comite: 1,
+};
+
+export function hasAnyRole(role: AppRole, allowed: readonly AppRole[]): boolean {
+  return allowed.includes(role);
+}
+
+export function roleLabel(role: AppRole): string {
+  return {
+    admin: "Administração",
+    triagem: "Triagem",
+    investigador: "Investigação",
+    comite: "Comitê",
+  }[role];
+}

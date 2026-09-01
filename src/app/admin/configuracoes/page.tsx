@@ -1,15 +1,110 @@
 import type { Metadata } from "next";
-import ModulePlaceholder from "@/components/admin/ModulePlaceholder";
+import Link from "next/link";
+
+import AdminTopbar from "@/components/admin/AdminTopbar";
+import CategoriasPanel from "@/components/admin/configuracoes/CategoriasPanel";
+import EquipePanel from "@/components/admin/configuracoes/EquipePanel";
+import OrganizacaoPanel from "@/components/admin/configuracoes/OrganizacaoPanel";
+import UnidadesPanel from "@/components/admin/configuracoes/UnidadesPanel";
+import { getStaffContext } from "@/lib/org/context";
+import {
+  TABS,
+  parseSettingsFilters,
+  settingsHref,
+  type SearchParams,
+  type SettingsTab,
+} from "@/lib/admin/configuracoes";
 
 export const metadata: Metadata = { title: "Configurações" };
 
-export default function Page() {
+/**
+ * Configurações da organização em quatro áreas.
+ *
+ * ABAS POR `?aba=`, NÃO SUB-ROTAS — a decisão e o porquê estão em
+ * `lib/admin/configuracoes.ts`, junto de `TABS`: o `layout.tsx` do App Router
+ * não recebe `searchParams`, então sub-rotas repetiriam o cabeçalho em quatro
+ * arquivos ou o esconderiam num layout cego à aba aberta. Com `?aba=` a página
+ * segue um Server Component único, o link continua compartilhável, e
+ * `.detail-tabs` — o vocabulário de aba que denúncias, investigações e planos
+ * já usam — vale sem nenhuma regra nova de CSS.
+ */
+
+const HEADINGS: Record<SettingsTab, { title: string; lead: string }> = {
+  organizacao: {
+    title: "A sua organização.",
+    lead:
+      "Identificação, fuso, prazos de atendimento e as duas configurações que decidem por quanto tempo os dados ficam e quanto detalhe um relatório pode mostrar sem apontar para quem denunciou.",
+  },
+  unidades: {
+    title: "Unidades e estabelecimentos.",
+    lead:
+      "A lista que o formulário público oferece a quem vai relatar, e o eixo de quase todo relatório. Unidade se desativa, não se apaga: os relatos já recebidos apontam para ela.",
+  },
+  categorias: {
+    title: "Categorias do relato.",
+    lead:
+      "O catálogo da NR-01, da NR-05 e da Lei 14.457 vem pronto e é somente leitura. A organização pode acrescentar as suas quando o vocabulário interno exigir.",
+  },
+  equipe: {
+    title: "Quem tem acesso.",
+    lead:
+      "O painel é só por convite. Aqui você vê quem entra, com que papel, e convida quem falta — o papel decide o que a pessoa enxerga de uma denúncia.",
+  },
+};
+
+export default async function Page({ searchParams }: { searchParams: Promise<SearchParams> }) {
+  const filters = parseSettingsFilters(await searchParams);
+  const staff = await getStaffContext();
+  const heading = HEADINGS[filters.aba];
+
+  // O papel aqui só esconde a tela. Quem recusa a escrita são `org_update`,
+  // `units_*`, `categories_*` e `members_update`, todas exigindo `admin`.
+  // Um não-admin que digitasse a URL veria os dados (a leitura é de toda a
+  // equipe) e não conseguiria gravar nada — mas mostrar formulários que sempre
+  // recusam é pior do que dizer a verdade.
+  if (staff.role !== "admin") {
+    return (
+      <>
+        <AdminTopbar eyebrow="ORGANIZAÇÃO" title="Configurações" />
+        <div className="placeholder">
+          <span>⚙</span>
+          <small>ACESSO RESTRITO À ADMINISTRAÇÃO</small>
+          <h2>Configurações</h2>
+          <p>
+            Dados da organização, unidades, categorias e equipe são alterados apenas por quem tem o
+            papel Administração. Procure quem administra o canal em {staff.orgName}.
+          </p>
+        </div>
+      </>
+    );
+  }
+
   return (
-    <ModulePlaceholder
-      title="Configurações"
-      eyebrow="ORGANIZAÇÃO"
-      copy="Dados da organização, unidades, taxonomia de categorias e gestão da equipe por convite."
-      phase="EM CONSTRUÇÃO · FASE 7"
-    />
+    <>
+      <AdminTopbar eyebrow="ORGANIZAÇÃO" title="Configurações" />
+      <section className="form-card">
+        <span className="section-kicker">{staff.orgName}</span>
+        <h1>{heading.title}</h1>
+        <p className="lead">{heading.lead}</p>
+
+        {/* Abas por URL: o conteúdo é do servidor e o link é compartilhável. */}
+        <div className="detail-tabs">
+          {TABS.map(tab => (
+            <Link
+              key={tab.key}
+              href={settingsHref(tab.key)}
+              className={filters.aba === tab.key ? "active" : ""}
+            >
+              {tab.label}
+            </Link>
+          ))}
+        </div>
+
+        {filters.aba === "organizacao" ? <OrganizacaoPanel /> : null}
+        {filters.aba === "unidades" ? <UnidadesPanel filters={filters} /> : null}
+        {filters.aba === "categorias" ? <CategoriasPanel filters={filters} /> : null}
+        {filters.aba === "equipe" ? <EquipePanel filters={filters} /> : null}
+      </section>
+    </>
   );
 }

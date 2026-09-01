@@ -222,3 +222,93 @@ form.inbox-tools{align-items:center;flex-wrap:wrap}
 /* `<optgroup>` é tag nova nesta folha: o catálogo de fatores de risco e o de
    origens são longos, e o cabeçalho do grupo precisa se distinguir das opções. */
 .message-box optgroup{font-weight:700;font-style:normal}
+
+/* ══ Fase 6 · relatórios ══════════════════════════════════════════════════════
+   Nada aqui altera declaração existente nem renomeia classe. Os sete relatórios
+   reusam o vocabulário que já havia (`.dashboard`, `.kpi-grid`, `.chart-card`,
+   `.panel-title`, `.bar-chart`, `.categories`/`.category-row`, `.inbox-tools`,
+   `.searchbox`, `.risk`, `.privacy-note`, `.placeholder`). O que falta são três
+   coisas que o protótipo nunca desenhou: um índice de relatórios, uma tabela de
+   verdade (a matriz unidade × fator da NR-01 não cabe em `.category-row`) e a
+   folha de impressão. */
+
+/* Índice dos sete: cartão-link. O `<a>` traz o mesmo desenho de `.chart-card`,
+   mas `.chart-card` é `padding+fundo+borda` e não sabe empilhar conteúdo. */
+.report-index{display:grid;grid-template-columns:repeat(2,1fr);gap:12px;margin-top:12px}
+.report-index>a{display:flex;flex-direction:column;gap:5px;padding:20px;color:inherit;background:white;border:1px solid #dfe5e1;border-radius:11px;text-decoration:none}
+.report-index>a:hover{border-color:var(--teal)}
+.report-index small{color:var(--teal);font:700 7px var(--font-geist-mono),monospace;letter-spacing:.1em}
+.report-index strong{font:500 17px Georgia,serif}
+.report-index p{margin:0;color:#7a8a89;font-size:9px;line-height:1.55}
+
+/* Duas colunas de painéis. `.dash-grid` já existe mas é 1.2fr/.8fr, proporção
+   do dashboard; aqui os dois painéis têm o mesmo peso. */
+.report-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-top:12px}
+.report-grid>*{min-width:0}
+.report-section{margin-top:12px}
+
+/* Tabela. `<table>` é tag nova nesta folha: a matriz unidade × fator e a lista
+   de exportações são dados tabulares, e fingir tabela com `<div>` quebraria o
+   leitor de tela e a impressão. O contêiner rola sozinho para o corpo da página
+   nunca rolar na horizontal. */
+.report-table{overflow-x:auto;margin-top:14px}
+.report-table table{width:100%;border-collapse:collapse}
+.report-table th{padding:9px 10px;color:#7b8c8d;background:#f7f8f5;border-bottom:1px solid #dfe5e1;text-align:left;font:700 7px var(--font-geist-mono),monospace;letter-spacing:.09em;white-space:nowrap}
+.report-table td{padding:9px 10px;border-bottom:1px solid #edf0ed;font-size:9px;vertical-align:middle}
+.report-table tbody tr:last-child td{border-bottom:0}
+.report-table td.num,.report-table th.num{text-align:right;font-variant-numeric:tabular-nums}
+.report-table td.factor{max-width:260px;font-size:9px}
+.report-table .risk{white-space:nowrap}
+/* A célula suprimida tem um símbolo só ("—") e precisa se ler como ausência
+   deliberada, não como zero esquecido. */
+.report-table td.void{color:#a8b3b1}
+
+/* Cabeçalho do documento impresso: some da tela, aparece no papel. Ver
+   `@media print` no fim deste bloco. */
+.report-print-head{display:none}
+
+/* Os dois `<label>` do filtro de período ("De", "até") vivem dentro do
+   `.searchbox`, que só previa `input` e `select`; sem isto herdariam o corpo de
+   16px e empurrariam os selects para fora da caixa. */
+.report-tools label{color:#7b8c8d;font:700 7px var(--font-geist-mono),monospace;letter-spacing:.09em;white-space:nowrap}
+.report-tools .searchbox{min-width:auto;gap:6px}
+
+/* Barra de ações (exportar, imprimir, voltar). `.inbox-tools` já desenha a
+   caixa dos filhos `:is(button,a)`; só o alinhamento à direita é novo. */
+.report-actions{justify-content:flex-end}
+.report-actions>:is(button,a).primary-button{color:white;background:var(--teal);border-color:var(--teal)}
+
+/* O medidor de cobertura de controle da NR-01 é o número que diz se o PGR é
+   real; quando ele não existe, o cartão não pode parecer um zero. */
+.kpi-grid article.void strong{color:#a8b3b1}
+
+/* Rótulo do eixo x de `.bar-chart` com nome de mês/unidade: o original previa
+   textos de 3 caracteres. */
+.bar-chart small{max-width:64px;overflow:hidden;text-align:center;text-overflow:ellipsis;white-space:nowrap}
+
+@media(max-width:850px){.report-index,.report-grid{grid-template-columns:1fr}}
+
+/* ── impressão ───────────────────────────────────────────────────────────────
+   `?print=1` já entrega o HTML sem barra de filtros e sem ações; esta folha
+   cuida do que é do meio de saída: tirar a navegação, desligar as cores de
+   fundo do painel e impedir que um painel se parta entre duas páginas. O
+   relatório da CIPA é o caso que manda aqui — ele precisa sair como um
+   documento único apresentável. */
+@media print{
+  @page{margin:14mm}
+  body{background:white}
+  .admin-shell{display:block;min-height:0;background:white}
+  .admin-sidebar,.admin-topbar,.report-tools,.report-actions,.no-print{display:none!important}
+  .dashboard{padding:0}
+  .report-print-head{display:block;margin-bottom:18px;padding-bottom:14px;border-bottom:2px solid var(--ink)}
+  .report-print-head small{display:block;color:var(--teal);font:700 8px var(--font-geist-mono),monospace;letter-spacing:.12em}
+  .report-print-head h1{margin:6px 0 0;font:500 28px Georgia,serif}
+  .report-print-head p{margin:6px 0 0;color:#54676a;font-size:10px}
+  .report-print-head span{display:block;margin-top:3px;color:#7a8a89;font-size:9px}
+  .chart-card,.priority-card,.protection-card,.kpi-grid article,.placeholder{box-shadow:none;border-color:#c3ccc8;break-inside:avoid}
+  .report-section,.report-grid>*,.kpi-grid,.report-table tr{break-inside:avoid}
+  .report-grid,.kpi-grid{gap:10px}
+  .privacy-note{break-inside:avoid}
+  /* A URL depois do link é ruído num documento que já traz o recorte no topo. */
+  a[href]:after{content:"" !important}
+}
