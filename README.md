@@ -70,7 +70,7 @@ denúncia, a chave, o IP em claro ou os campos de identidade — só referência
 | 2 | Envio de relato ponta a ponta, upload direto ao Storage, protocolo + chave | **concluída** |
 | 3 | Acompanhamento real: linha do tempo, caixa postal bidirecional, complemento | **concluída** |
 | 4 | Painel de denúncias real: caixa de entrada, detalhe, evidência, identidade | **concluída** |
-| 5 | Investigações e planos de ação | a fazer |
+| 5 | Investigações e planos de ação | **concluída** |
 | 6 | Relatórios e indicadores NR-01 / CIPA | a fazer |
 | 7 | Auditoria, retenção, `reporter_api`, endurecimento final | a fazer |
 
@@ -130,6 +130,35 @@ investigador sintético (criado e removido na verificação):
 A última linha é a que sustenta a promessa da tela pública: quem conduz a apuração não consegue
 se autoconceder acesso à identidade de quem denunciou.
 
+### O que a Fase 5 construiu
+
+| Entrega | Onde |
+|---|---|
+| Investigações: lista, detalhe e 5 abas | `src/components/admin/investigacoes/`, `src/lib/admin/investigacoes.ts` |
+| Impedimento, dupla assinatura, somente-leitura após assinar | `investigacoes/[id]/actions.ts` |
+| Planos de ação: lista, detalhe, medidas e eficácia | `src/components/admin/planos/`, `src/lib/admin/planos.ts` |
+| Verificação de eficácia com verificador ≠ executor | `planos-de-acao/[id]/actions.ts` |
+| Varredura de atraso e prazos (`sweep_overdue`) | `src/app/api/cron/sweep-overdue/route.ts` |
+
+**Concluir e assinar é um único UPDATE.** A policy `inv_update` exige `reviewed_at IS NULL` no
+`USING`, e o CHECK `inv_signoff_before_close` exige `reviewed_at` para concluir. Em dois UPDATEs, o
+segundo afeta **zero linhas sem levantar erro** — o supabase-js devolve `error: null` sobre uma
+gravação que não aconteceu. Por isso toda action que escreve em `investigations` pede `.select("id")`
+de volta e trata lista vazia como recusa.
+
+**`atrasada` nunca aparece em `<select>` de escrita.** O estado é derivado por `sweep_overdue()`, que
+também o reverte quando a medida atrasada é concluída. Se uma pessoa puder marcá-lo à mão, o
+indicador deixa de significar alguma coisa.
+
+**`effectiveness_criteria` é obrigatório na criação da medida**, não na verificação: critério escrito
+depois do resultado é justificativa, não verificação.
+
+**Falhas de RLS encontradas ao construir o módulo e corrigidas na 026:** as tabelas-filhas de
+`investigations` herdavam a visibilidade de *leitura* para autorizar *escrita*. Consequências: dava
+para acrescentar achado ou entrevista a uma investigação já assinada (direto pela API, sem passar
+pela interface), e `triagem` — que só deveria acompanhar — podia escrever no dossiê. O predicado
+`app.inv_writable()` agora exige apuração aberta **e** papel de escrita, nas cinco filhas.
+
 ## O protótipo original
 
 O protótipo (Cloudflare Workers + D1 + R2, construído no ChatGPT Sites) continua intacto em
@@ -170,8 +199,62 @@ Aplicadas via MCP do Supabase, em ordem. `supabase migration list` no projeto
 | 022 | Fase 4: `app.write_audit` (lista branca), `app.notify`, triggers de auditoria e notificação, `open_evidence()`, `request_identity_access()` |
 | 022b | amplia o CHECK de `notifications.kind` — só previa 8 tipos e rejeitava `report.assigned` |
 | 023 | `record_export()` — exportação e evento de auditoria na mesma transação |
+| 024 | Fase 5: lista branca ampliada, `app.next_code`, 6 triggers de auditoria, `sweep_overdue()` |
+| 024b | revoga `sweep_overdue()` de `authenticated` — os privilégios padrão a haviam publicado |
+| 025 | `public.next_code()` — wrapper, porque o schema `app` não é exposto pelo PostgREST |
+| 026 | escrita nas tabelas-filhas de investigação: exige apuração aberta e papel de escrita |
 
 ### Armadilhas registradas
+
+- **Nunca apague uma linha do MEIO de `audit_events`.** Cada linha carrega o hash da
+  anterior. Remover uma do meio deixa `verify_audit_chain()` acusando elo quebrado para
+  sempre — e um "registro imutável" que se reporta quebrado é pior que nenhum. Ao limpar
+  dados de teste há dois caminhos legítimos:
+
+  1. **deixar a trilha em paz** — as FKs são `ON DELETE SET NULL`, então os eventos
+     sobrevivem como órfãos legítimos, que é o comportamento desejado; ou
+  2. **zerar a tabela inteira**, o que reinicia a cadeia de forma consistente (o primeiro
+     evento novo tem `prev_hash` nulo por definição).
+
+  Aconteceu na Fase 5: limpezas de fixture removeram três linhas do meio e a verificação
+  passou a acusar `seq 190, 193, 213`. Foi corrigido zerando a tabela. Note que o
+  classificador de permissões bloqueia `delete` em `audit_events` — é proposital; a
+  limpeza de entrega é feita à mão no SQL Editor, com `scripts/limpeza-pre-entrega.sql`.
+
+- **`revoke ... from public, anon` NÃO fecha uma função nova.** Este banco tem
+  `ALTER DEFAULT PRIVILEGES` concedendo `EXECUTE` de toda função criada em `public` ao
+  papel `authenticated`. Uma função pensada para o cron nasce publicada em
+  `/rest/v1/rpc/<nome>`. A forma correta é sempre revogar dos três e conceder de volta
+  só a quem deve:
+
+  ```sql
+  revoke all on function public.f(...) from public, anon, authenticated;
+  grant execute on function public.f(...) to authenticated;  -- só se for o caso
+  ```
+
+  Foi assim que `sweep_overdue()` acabou exposta e precisou da migração 024b. Auditoria
+  da superfície inteira:
+
+  ```sql
+  select p.proname,
+         has_function_privilege('anon', p.oid, 'execute')         as anon,
+         has_function_privilege('authenticated', p.oid, 'execute') as auth
+    from pg_proc p join pg_namespace n on n.oid = p.pronamespace
+   where n.nspname = 'public' and p.prokind = 'f' order by 2 desc, 3 desc;
+  ```
+
+  Hoje só `get_report_catalog` é executável por `anon`, e isso é deliberado.
+
+- **UPDATE barrado por RLS não dá erro: afeta zero linhas.** A policy `inv_update` de
+  `investigations` tem `reviewed_at IS NULL` no `USING`, então depois de assinada a linha
+  fica invisível para escrita. Um segundo UPDATE devolve `error: null` e nenhuma linha —
+  o supabase-js relata sucesso sobre uma mutação que não aconteceu. Em toda action que
+  escreve numa tabela com `USING` restritivo, **confira a contagem de linhas afetadas** e
+  trate zero como erro.
+
+- **`session_replication_role = replica` também desliga `ON DELETE CASCADE`.** É o modo
+  usado para apagar dados de teste (as RULEs de `audit_events` quebram a verificação de
+  FK). Nele os filhos não são removidos junto: apague-os explicitamente, ou ficam órfãos.
 
 - **Nunca** `alter table org_members force row level security` — o Postgres não
   aplica RLS ao dono da tabela, e é isso que quebra a recursão nas funções

@@ -70,6 +70,49 @@ export function formatDateTime(iso: string): string {
   return DATE_TIME.format(new Date(iso));
 }
 
+/**
+ * Coluna `date` (sem hora) formatada como TEXTO, nunca por `Date`.
+ *
+ * `formatDate()` acima está certo para `timestamptz` e não deve mudar. Para uma
+ * `date` ele quebra: `new Date("2026-08-28")` é meia-noite **UTC**, que em São
+ * Paulo ainda é 27/08 às 21h — o prazo apareceria um dia antes do que foi
+ * digitado. Data sem hora não tem fuso, então não passa por fuso nenhum.
+ *
+ * Vale para `investigations.planned_start/planned_end`,
+ * `action_plans.starts_on/due_on` e `action_measures.due_on/verify_on`.
+ * Nasceu em `lib/admin/investigacoes.ts` (Fase 5, Agente F) e subiu para cá
+ * quando o segundo módulo passou a precisar dela.
+ */
+export function formatDateOnly(value: string): string {
+  const [year, month, day] = value.split("-");
+  return day && month && year ? `${day}/${month}/${year}` : value;
+}
+
+/**
+ * Comparação de `date` como texto ISO: `AAAA-MM-DD` ordena lexicograficamente
+ * igual ao calendário, e assim a comparação não precisa de fuso nenhum. O
+ * "hoje" tem que vir de `todayInSaoPaulo()`, não do relógio do servidor.
+ */
+export function isPastDue(dateOnly: string | null, today: string): boolean {
+  return Boolean(dateOnly && dateOnly < today);
+}
+
+/** O "hoje" da operação. `en-CA` devolve `AAAA-MM-DD`, o mesmo formato de uma `date`. */
+export function todayInSaoPaulo(now: Date = new Date()): string {
+  return new Intl.DateTimeFormat("en-CA", { timeZone: "America/Sao_Paulo" }).format(now);
+}
+
+/**
+ * Soma dias a uma `date` sem sair do calendário. `Date.UTC` mantém a conta em
+ * UTC do início ao fim — se o servidor estivesse num fuso com horário de verão,
+ * um `new Date(a, m, d)` local poderia devolver o dia anterior.
+ */
+export function addDaysOnly(dateOnly: string, days: number): string {
+  const [year, month, day] = dateOnly.split("-").map(Number);
+  if (!year || !month || !day) return dateOnly;
+  return new Date(Date.UTC(year, month - 1, day + days)).toISOString().slice(0, 10);
+}
+
 /** "há 3 dias" — o protótipo mostrava a idade do caso, não o carimbo absoluto. */
 export function relativeAge(iso: string, now: Date = new Date()): string {
   const minutes = Math.max(0, Math.round((now.getTime() - new Date(iso).getTime()) / 60000));

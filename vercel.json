@@ -4,6 +4,10 @@
     {
       "path": "/api/cron/cleanup-staging",
       "schedule": "0 3 * * *"
+    },
+    {
+      "path": "/api/cron/sweep-overdue",
+      "schedule": "0 7 * * *"
     }
   ]
 }

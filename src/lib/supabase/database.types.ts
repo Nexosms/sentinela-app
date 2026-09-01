@@ -2214,6 +2214,7 @@ export type Database = {
       }
       expire_upload_tickets: { Args: never; Returns: string[] }
       get_report_catalog: { Args: { p_org_slug: string }; Returns: Json }
+      next_code: { Args: { p_org: string; p_prefix: string }; Returns: string }
       open_evidence: {
         Args: { p_evidence: string }
         Returns: {
@@ -2266,6 +2267,7 @@ export type Database = {
         Args: { p_count: number; p_org: string }
         Returns: number
       }
+      sweep_overdue: { Args: never; Returns: Json }
       verify_audit_chain: {
         Args: { p_from?: string; p_org: string }
         Returns: {

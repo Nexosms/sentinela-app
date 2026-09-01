@@ -56,7 +56,8 @@ begin;
 
   -- A trilha de auditoria é uma cadeia de hash por organização. Zerá-la por
   -- completo é consistente (a próxima linha começa a cadeia de novo). Apagar
-  -- um pedaço do MEIO, não: `verify_audit_chain()` passaria a acusar quebra.
+  -- um pedaço do MEIO, não: `verify_audit_chain()` passaria a acusar quebra
+  -- para sempre. É tudo ou nada — nunca um DELETE seletivo aqui.
   delete from public.audit_events;
 commit;
 

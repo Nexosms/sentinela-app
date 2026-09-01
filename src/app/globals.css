@@ -128,3 +128,97 @@ form.inbox-tools{align-items:center;flex-wrap:wrap}
 .privacy-note button{min-height:38px;margin-top:8px;padding:0 14px;color:#684812;background:white;border:1px solid #d9c9a4;border-radius:7px;font-size:11px;cursor:pointer}
 .privacy-note :disabled{opacity:.5;cursor:not-allowed}
 .message-box .privacy-note{margin-top:0;margin-bottom:14px}
+
+/* ══ Fase 5 · investigações ═══════════════════════════════════════════════════
+   Nada aqui altera declaração existente nem renomeia classe. O módulo reusa o
+   vocabulário que já havia (`.inbox`, `.case-list`, `.detail-tabs`,
+   `.detail-columns`, `.message-box`, `.file-list`, `.check-row`, `.toggle-row`,
+   `.field-grid`, `.wide-field`, `.privacy-note`, `.care-note`, `.risk-banner`);
+   estas regras cobrem só as combinações que o protótipo nunca montou.
+
+   A substituição mecânica `X button` → `X :is(button,a)` já cobria os quatro
+   seletores de que preciso (`.case-list>`, `.detail-tabs`, `.inbox-tools>`,
+   `.file-list`), feita na Fase 4 em base e media queries. Nenhuma nova foi
+   necessária. */
+
+/* Os formulários longos (plano, entrevista, achado, conclusão) moram num
+   `.message-box`, cujo <form> é `display:contents` desde a Fase 4. O painel
+   nunca tinha recebido `.field-grid` nem `.wide-field`, que vêm do formulário
+   público e traziam margem de topo de tela cheia. */
+.message-box .field-grid,.message-box .wide-field{margin-top:14px}
+.message-box .field-grid+.wide-field{margin-top:12px}
+/* `.field-grid label` é flex-column; o <select> herdava a largura do grid mas o
+   <input type=date> não preenche a célula sozinho no Safari. */
+.message-box .field-grid input,.message-box .field-grid select{min-height:44px}
+/* O rodapé de `.wide-field` é `text-align:right` por herança do wizard; dentro
+   do painel de apuração ele é legenda de campo, não contador de caracteres. */
+.message-box .wide-field small{text-align:left}
+/* `.check-row` e `.toggle-row` são afirmações jurídicas: o clique tem que pegar
+   na frase inteira, e a caixa não pode encolher junto com o texto. */
+.message-box .check-row,.message-box .toggle-row{cursor:pointer;line-height:1.55}
+.message-box .check-row input,.message-box .toggle-row input{flex:0 0 auto;width:16px;height:16px}
+.message-box .toggle-row label{cursor:pointer;line-height:1.55}
+/* `.message-head` vinha só depois do topo do `.message-box`; aqui ele encabeça
+   painéis que também trazem `.privacy-note` logo abaixo. */
+.message-box .message-head+.privacy-note{margin-top:14px}
+/* Erro e aviso de ação dentro do painel não podem colar no botão anterior. */
+.message-box>.field-error-message{margin-top:10px}
+/* Vários painéis em sequência numa mesma aba (achados + conclusão + assinatura). */
+.case-detail>.message-box+.message-box,.case-detail>.file-list+.message-box,
+.case-detail>.detail-columns+.message-box,.case-detail>.privacy-note+.file-list{margin-top:14px}
+.case-detail>.message-box{margin-top:14px}
+/* A linha da lista de evidências/equipe ganhou um selo `.risk` no meio, entre o
+   rótulo e as ações. `.file-list>div` é flex, então basta impedir o encolhimento. */
+.file-list>div>.risk{flex:0 0 auto}
+/* `.file-list b` empilha `small`s: um membro tem papel, data da declaração e a
+   própria declaração. */
+.file-list b>small+small{margin-top:5px;font-style:italic}
+/* O botão de remover membro/desvincular denúncia é um <form> por ação — mesma
+   solução de `display:contents` da Fase 4 em `.case-actions`. */
+.file-list form{display:contents}
+/* `.case-actions>button` nunca declarou `cursor`: no protótipo tudo era <button>
+   dentro de um onClick global. */
+.case-actions>button{cursor:pointer}
+/* Sinalizador de prazo vencido na linha da lista: `.danger` já existe, mas o
+   `<small>` da linha define a cor depois dele na cascata. */
+.case-list>:is(button,a)>small .danger{color:var(--danger)}
+
+/* ══ Fase 5 · planos de ação ══════════════════════════════════════════════════
+   Nada aqui altera declaração existente nem renomeia classe, e nada toca em
+   seletor que o módulo de investigações já usa. O módulo reusa o vocabulário
+   que havia (`.inbox`, `.case-list`, `.detail-tabs`, `.kpi-grid`,
+   `.detail-columns`, `.message-box`, `.file-list`, `.privacy-note`,
+   `.care-note`, `.risk-banner`, `.field-grid`, `.wide-field`, `.check-row`);
+   as quatro regras abaixo cobrem só o que nem o protótipo nem as duas fases
+   anteriores montaram.
+
+   A substituição mecânica `X button` → `X :is(button,a)` da Fase 4 já cobria os
+   quatro seletores de que preciso (`.case-list>`, `.detail-tabs`,
+   `.inbox-tools>`, `.file-list`). Nenhuma nova foi necessária. */
+
+/* O `.kpi-grid` nasceu na largura do painel de indicadores; aqui ele mora dentro
+   do `.case-detail`, que é a coluna direita de `.inbox-layout` (≥400px). Quatro
+   cartões cabem, mas com a escala tipográfica do painel largo o número
+   transbordaria. Só a escala muda, e só neste contexto — o `.kpi-grid` do
+   dashboard não é filho de `.case-detail` e não vê nenhuma destas linhas. */
+.case-detail>.kpi-grid{margin-top:14px;gap:8px}
+.case-detail>.kpi-grid article{padding:13px}
+.case-detail>.kpi-grid strong{margin:8px 0 4px;font-size:22px}
+.case-detail>.kpi-grid small{font-size:7px}
+.case-detail>.kpi-grid span{font-size:8px}
+/* A aba Eficácia agrupa cada medida (o painel de leitura seguido do formulário
+   de verificação ou do de follow-up) num bloco próprio, então esses
+   `.message-box` deixam de ser filhos diretos de `.case-detail` e perdem a
+   margem de `.case-detail>.message-box`.
+   O `.detail-columns+` no seletor não é enfeite: sem ele a regra também
+   alcançaria o `.message-box` que a aba Entrevistas de INVESTIGAÇÕES aninha
+   dentro do seu próprio `.message-box`, e mudaria o espaçamento de um módulo
+   já entregue. Ali o irmão anterior é uma mensagem, nunca um `.detail-columns`. */
+.case-detail>div>.detail-columns+.message-box{margin-top:14px}
+/* Legenda de campo dentro do `.field-grid`: o `<small>` herdava o peso 700 do
+   `<label>` e competia com o próprio rótulo. Espelha `.wide-field small`, que
+   já resolvia o mesmo problema no campo largo. */
+.message-box .field-grid label small{color:#8c9898;font-size:8px;font-weight:500;line-height:1.5}
+/* `<optgroup>` é tag nova nesta folha: o catálogo de fatores de risco e o de
+   origens são longos, e o cabeçalho do grupo precisa se distinguir das opções. */
+.message-box optgroup{font-weight:700;font-style:normal}
