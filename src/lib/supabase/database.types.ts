@@ -2214,7 +2214,35 @@ export type Database = {
       }
       expire_upload_tickets: { Args: never; Returns: string[] }
       get_report_catalog: { Args: { p_org_slug: string }; Returns: Json }
+      open_evidence: {
+        Args: { p_evidence: string }
+        Returns: {
+          evidence_id: string
+          filename: string
+          mime_type: string
+          org_id: string
+          report_id: string
+          sha256: string
+          size_bytes: number
+          storage_path: string
+        }[]
+      }
       prune_rate_limits: { Args: never; Returns: undefined }
+      record_export: {
+        Args: {
+          p_filters: Json
+          p_format: Database["public"]["Enums"]["export_format"]
+          p_includes_identity?: boolean
+          p_kind: string
+          p_org: string
+          p_row_count: number
+        }
+        Returns: string
+      }
+      request_identity_access: {
+        Args: { p_justification: string; p_report: string }
+        Returns: undefined
+      }
       reveal_identity: {
         Args: { p_report: string }
         Returns: {

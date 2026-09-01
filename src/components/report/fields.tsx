@@ -1,6 +1,6 @@
 "use client";
 
-/** Helpers de rótulo e erro, copiados verbatim do protótipo (_legacy, l. 96–104).
+/** Helpers de rótulo e erro, copiados verbatim do protótipo (`ReportChannel.tsx`, l. 96–104).
  *  As classes `.field-title`, `.info-hint` e `.field-error-message` já existem
  *  no design system. */
 

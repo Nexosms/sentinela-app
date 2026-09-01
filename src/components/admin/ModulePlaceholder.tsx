@@ -17,7 +17,7 @@ export default function ModulePlaceholder({
 }) {
   return (
     <>
-      <AdminTopbar eyebrow={eyebrow} title={title} unreadCount={0} />
+      <AdminTopbar eyebrow={eyebrow} title={title} />
       <div className="placeholder">
         <span>◈</span>
         <small>{phase}</small>

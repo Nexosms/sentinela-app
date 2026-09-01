@@ -3,7 +3,7 @@
 import type { TimelineStep } from "@/lib/report/tracking";
 
 /**
- * Linha do tempo (_legacy, l. 151). No protótipo os quatro degraus eram JSX
+ * Linha do tempo (protótipo `ReportChannel.tsx`, l. 151). No protótipo os quatro degraus eram JSX
  * fixo, com "Hoje, 14:32" escrito no código. Aqui cada degrau vem de
  * `case.timeline`: o servidor projeta o histórico real sobre `TIMELINE_STEPS`
  * e já entrega `detail` formatado — a tela não reformata data nenhuma.

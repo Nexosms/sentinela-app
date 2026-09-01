@@ -14,7 +14,7 @@ function authorLabel(message: TrackedMessage): string {
 }
 
 /**
- * Caixa postal (_legacy, l. 151).
+ * Caixa postal (protótipo `ReportChannel.tsx`, l. 151).
  *
  * Três mentiras do protótipo morrem aqui: a mensagem da empresa era um
  * parágrafo escrito no código, a caixa nunca ficava vazia (mostrava sempre a

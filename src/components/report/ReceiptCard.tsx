@@ -7,7 +7,7 @@ import Brand from "@/components/brand/Brand";
 import type { Receipt } from "./wizardState";
 
 /**
- * Tela de comprovante (_legacy, l. 141). É uma transição de estado dentro de
+ * Tela de comprovante (protótipo `ReportChannel.tsx`, l. 141). É uma transição de estado dentro de
  * /relato, nunca uma URL: a chave é mostrada uma única vez e não pode viajar
  * em querystring, histórico do navegador ou Referer.
  */

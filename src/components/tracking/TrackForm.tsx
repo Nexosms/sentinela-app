@@ -5,7 +5,7 @@ import type { FormEvent } from "react";
 export type Credentials = { protocol: string; secret: string };
 
 /**
- * Formulário de consulta (_legacy, l. 150). Markup verbatim; o que mudou é que
+ * Formulário de consulta (protótipo `ReportChannel.tsx`, l. 150). Markup verbatim; o que mudou é que
  * o `onSubmit` sempre vai à rede e o `.form-error` mostra a mensagem que o
  * servidor devolveu — 401 (dado errado), 429 (bloqueio temporário) e 503
  * (indisponível) chegam aqui já traduzidos por `trackingClient`.

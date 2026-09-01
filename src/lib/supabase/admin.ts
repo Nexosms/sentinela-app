@@ -7,11 +7,13 @@ import { publicEnv } from "@/lib/env";
 /**
  * Cliente com a chave de serviço. PASSA POR CIMA DA RLS.
  *
- * Permitido em exatamente três lugares (imposto por ESLint em
+ * Permitido em exatamente quatro lugares (imposto por ESLint em
  * eslint.config.mjs):
- *   - src/app/api/public/**        fluxo do denunciante, que não tem sessão
- *   - src/app/api/cron/**          tarefas agendadas
- *   - src/app/api/admin/invites/** provisionamento de usuário
+ *   - src/app/api/public/**         fluxo do denunciante, que não tem sessão
+ *   - src/app/api/cron/**           tarefas agendadas
+ *   - src/app/api/admin/invites/**  provisionamento de usuário
+ *   - src/app/api/admin/evidence/** assinatura de URL do bucket privado, depois
+ *                                   de a RLS já ter autorizado e registrado
  *
  * Como a RLS está fora, todo uso precisa fazer o escopo de organização
  * explicitamente: `.eq("org_id", orgId)`. Trate cada arquivo que importa isto

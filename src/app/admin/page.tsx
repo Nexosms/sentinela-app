@@ -2,16 +2,9 @@ import type { Metadata } from "next";
 import AdminTopbar from "@/components/admin/AdminTopbar";
 import { createClient } from "@/lib/supabase/server";
 import { getStaffContext } from "@/lib/org/context";
+import { RISK_LABEL, STATUS_LABEL, formatDate, riskClass } from "@/lib/admin/labels";
 
 export const metadata: Metadata = { title: "Visão geral" };
-
-const STATUS_LABEL: Record<string, string> = {
-  em_triagem: "Em triagem",
-  em_apuracao: "Em apuração",
-  aguardando_informacao: "Aguardando informação",
-  concluida: "Concluída",
-  arquivada: "Arquivada",
-};
 
 function greeting(): string {
   const hour = Number(
@@ -49,7 +42,7 @@ export default async function AdminOverview() {
 
   return (
     <>
-      <AdminTopbar eyebrow="VISÃO OPERACIONAL" title="Visão geral" unreadCount={0} />
+      <AdminTopbar eyebrow="VISÃO OPERACIONAL" title="Visão geral" />
       <div className="dashboard">
         <div className="dash-heading">
           <div>
@@ -110,16 +103,12 @@ export default async function AdminOverview() {
               </div>
               {recentes.map(item => (
                 <div className="priority-case" key={item.id}>
-                  <span className={`risk ${item.risk}`}>{item.risk}</span>
+                  <span className={riskClass(item.risk)}>{RISK_LABEL[item.risk]}</span>
                   <div>
-                    <strong>{STATUS_LABEL[item.status] ?? item.status}</strong>
+                    <strong>{STATUS_LABEL[item.status]}</strong>
                     <small>{item.protocol}</small>
                   </div>
-                  <b>
-                    {new Intl.DateTimeFormat("pt-BR", { dateStyle: "short" }).format(
-                      new Date(item.created_at),
-                    )}
-                  </b>
+                  <b>{formatDate(item.created_at)}</b>
                 </div>
               ))}
             </section>

@@ -14,7 +14,7 @@ import TrackForm, { type Credentials } from "./TrackForm";
 import { formatWhen, openCase, refreshCase, TrackRequestError } from "./trackingClient";
 
 /**
- * Único nó com estado do acompanhamento (_legacy, l. 150).
+ * Único nó com estado do acompanhamento (protótipo `ReportChannel.tsx`, l. 150).
  *
  * Duas views na MESMA URL: consulta e caixa postal. A transição é de estado,
  * nunca de rota — o protocolo não pode aparecer em `/acompanhar/XXXX`, onde

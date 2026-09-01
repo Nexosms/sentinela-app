@@ -23,6 +23,10 @@ const eslintConfig = defineConfig([
       "src/app/api/public/**",
       "src/app/api/cron/**",
       "src/app/api/admin/invites/**",
+      // Assinatura de URL do bucket privado `evidence`: a autorização já foi
+      // provada pela RLS (open_evidence) e a trilha já foi gravada antes de a
+      // chave entrar em cena. Ver o comentário no topo da rota.
+      "src/app/api/admin/evidence/**",
     ],
     rules: {
       "no-restricted-imports": [
@@ -32,7 +36,7 @@ const eslintConfig = defineConfig([
             {
               group: ["**/supabase/admin", "@/lib/supabase/admin"],
               message:
-                "O cliente service-role só pode ser importado em api/public/**, api/cron/** e api/admin/invites. Use @/lib/supabase/server (sob RLS).",
+                "O cliente service-role só pode ser importado em api/public/**, api/cron/**, api/admin/invites e api/admin/evidence. Use @/lib/supabase/server (sob RLS).",
             },
           ],
         },

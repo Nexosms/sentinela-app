@@ -3,7 +3,7 @@
 import type { TrackedCase } from "@/lib/report/tracking";
 
 /**
- * Cabeçalho do caso (_legacy, l. 151). O protocolo era o texto digitado no
+ * Cabeçalho do caso (protótipo `ReportChannel.tsx`, l. 151). O protocolo era o texto digitado no
  * formulário e o status era a string fixa "Em triagem"; agora os dois vêm do
  * registro real devolvido pelo servidor.
  */
