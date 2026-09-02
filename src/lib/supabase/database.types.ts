@@ -1,6 +1,3 @@
-// Gerado por: mcp supabase generate_typescript_types / `npm run db:types`.
-// NÃO editar à mão.
-
 export type Json =
   | string
   | number
@@ -1999,6 +1996,38 @@ export type Database = {
           },
         ]
       }
+      role_nav_permissions: {
+        Row: {
+          nav_key: string
+          org_id: string
+          role: Database["public"]["Enums"]["app_role"]
+          updated_at: string
+          visible: boolean
+        }
+        Insert: {
+          nav_key: string
+          org_id: string
+          role: Database["public"]["Enums"]["app_role"]
+          updated_at?: string
+          visible?: boolean
+        }
+        Update: {
+          nav_key?: string
+          org_id?: string
+          role?: Database["public"]["Enums"]["app_role"]
+          updated_at?: string
+          visible?: boolean
+        }
+        Relationships: [
+          {
+            foreignKeyName: "role_nav_permissions_org_id_fkey"
+            columns: ["org_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
     }
     Views: {
       v_category_distribution: {
@@ -2240,6 +2269,30 @@ export type Database = {
         }
         Returns: string
       }
+      rel_cipa: {
+        Args: { p_from: string; p_org: string; p_to: string; p_unit: string }
+        Returns: Json
+      }
+      rel_desfechos: {
+        Args: { p_from: string; p_org: string; p_to: string; p_unit: string }
+        Returns: Json
+      }
+      rel_panorama: {
+        Args: { p_from: string; p_org: string; p_to: string; p_unit: string }
+        Returns: Json
+      }
+      rel_psicossocial: {
+        Args: { p_from: string; p_org: string; p_to: string; p_unit: string }
+        Returns: Json
+      }
+      rel_retaliacao: {
+        Args: { p_from: string; p_org: string; p_to: string; p_unit: string }
+        Returns: Json
+      }
+      rel_sla: {
+        Args: { p_from: string; p_org: string; p_to: string; p_unit: string }
+        Returns: Json
+      }
       request_identity_access: {
         Args: { p_justification: string; p_report: string }
         Returns: undefined
@@ -2349,12 +2402,12 @@ export type Tables<
   DefaultSchemaTableNameOrOptions extends
     | keyof (DefaultSchema["Tables"] & DefaultSchema["Views"])
     | { schema: keyof DatabaseWithoutInternals },
-  TableName extends DefaultSchemaTableNameOrOptions extends {
+  TableName extends (DefaultSchemaTableNameOrOptions extends {
     schema: keyof DatabaseWithoutInternals
   }
     ? keyof (DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Tables"] &
         DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Views"])
-    : never = never,
+    : never) = never,
 > = DefaultSchemaTableNameOrOptions extends {
   schema: keyof DatabaseWithoutInternals
 }
@@ -2378,11 +2431,11 @@ export type TablesInsert<
   DefaultSchemaTableNameOrOptions extends
     | keyof DefaultSchema["Tables"]
     | { schema: keyof DatabaseWithoutInternals },
-  TableName extends DefaultSchemaTableNameOrOptions extends {
+  TableName extends (DefaultSchemaTableNameOrOptions extends {
     schema: keyof DatabaseWithoutInternals
   }
     ? keyof DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Tables"]
-    : never = never,
+    : never) = never,
 > = DefaultSchemaTableNameOrOptions extends {
   schema: keyof DatabaseWithoutInternals
 }
@@ -2403,11 +2456,11 @@ export type TablesUpdate<
   DefaultSchemaTableNameOrOptions extends
     | keyof DefaultSchema["Tables"]
     | { schema: keyof DatabaseWithoutInternals },
-  TableName extends DefaultSchemaTableNameOrOptions extends {
+  TableName extends (DefaultSchemaTableNameOrOptions extends {
     schema: keyof DatabaseWithoutInternals
   }
     ? keyof DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Tables"]
-    : never = never,
+    : never) = never,
 > = DefaultSchemaTableNameOrOptions extends {
   schema: keyof DatabaseWithoutInternals
 }
@@ -2428,11 +2481,11 @@ export type Enums<
   DefaultSchemaEnumNameOrOptions extends
     | keyof DefaultSchema["Enums"]
     | { schema: keyof DatabaseWithoutInternals },
-  EnumName extends DefaultSchemaEnumNameOrOptions extends {
+  EnumName extends (DefaultSchemaEnumNameOrOptions extends {
     schema: keyof DatabaseWithoutInternals
   }
     ? keyof DatabaseWithoutInternals[DefaultSchemaEnumNameOrOptions["schema"]]["Enums"]
-    : never = never,
+    : never) = never,
 > = DefaultSchemaEnumNameOrOptions extends {
   schema: keyof DatabaseWithoutInternals
 }
@@ -2445,11 +2498,11 @@ export type CompositeTypes<
   PublicCompositeTypeNameOrOptions extends
     | keyof DefaultSchema["CompositeTypes"]
     | { schema: keyof DatabaseWithoutInternals },
-  CompositeTypeName extends PublicCompositeTypeNameOrOptions extends {
+  CompositeTypeName extends (PublicCompositeTypeNameOrOptions extends {
     schema: keyof DatabaseWithoutInternals
   }
     ? keyof DatabaseWithoutInternals[PublicCompositeTypeNameOrOptions["schema"]]["CompositeTypes"]
-    : never = never,
+    : never) = never,
 > = PublicCompositeTypeNameOrOptions extends {
   schema: keyof DatabaseWithoutInternals
 }

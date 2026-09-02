@@ -6,7 +6,8 @@ import CategoriasPanel from "@/components/admin/configuracoes/CategoriasPanel";
 import EquipePanel from "@/components/admin/configuracoes/EquipePanel";
 import OrganizacaoPanel from "@/components/admin/configuracoes/OrganizacaoPanel";
 import UnidadesPanel from "@/components/admin/configuracoes/UnidadesPanel";
-import { getStaffContext } from "@/lib/org/context";
+import { getStaffContext, getRoleNavOverrides, roleLabel } from "@/lib/org/context";
+import { CONFIGURACOES_ITEM, isNavVisible } from "@/lib/admin/navItems";
 import {
   TABS,
   parseSettingsFilters,
@@ -48,7 +49,7 @@ const HEADINGS: Record<SettingsTab, { title: string; lead: string }> = {
   equipe: {
     title: "Quem tem acesso.",
     lead:
-      "O painel é só por convite. Aqui você vê quem entra, com que papel, e convida quem falta — o papel decide o que a pessoa enxerga de uma denúncia.",
+      "O painel é só por convite. Aqui você vê quem entra, com que papel, convida quem falta e escolhe, por cargo, quais abas do menu admin cada um enxerga.",
   },
 };
 
@@ -56,13 +57,19 @@ export default async function Page({ searchParams }: { searchParams: Promise<Sea
   const filters = parseSettingsFilters(await searchParams);
   const staff = await getStaffContext();
   const heading = HEADINGS[filters.aba];
+  const overrides = await getRoleNavOverrides(staff.orgId);
 
-  // O papel aqui só esconde a tela. Quem recusa a escrita são `org_update`,
-  // `units_*`, `categories_*` e `members_update`, todas exigindo `admin`.
-  // Um não-admin que digitasse a URL veria os dados (a leitura é de toda a
-  // equipe) e não conseguiria gravar nada — mas mostrar formulários que sempre
-  // recusam é pior do que dizer a verdade.
-  if (staff.role !== "admin") {
+  // A visibilidade da ABA é decidida pela grade de permissões (como qualquer
+  // outro item do menu). A ESCRITA, porém, nunca depende disto: quem recusa
+  // de verdade são `org_update`, `units_*`, `categories_*`, `members_update`
+  // e `role_nav_permissions_write`, todas exigindo `admin` na RLS. Por isso
+  // quem não é admin mas tem a aba liberada vê os quatro painéis em modo
+  // leitura — mostrar formulários que o banco sempre recusaria é pior do que
+  // dizer a verdade.
+  const podeVer = isNavVisible(staff.role, CONFIGURACOES_ITEM, overrides);
+  const somenteLeitura = staff.role !== "admin";
+
+  if (!podeVer) {
     return (
       <>
         <AdminTopbar eyebrow="ORGANIZAÇÃO" title="Configurações" />
@@ -87,6 +94,16 @@ export default async function Page({ searchParams }: { searchParams: Promise<Sea
         <h1>{heading.title}</h1>
         <p className="lead">{heading.lead}</p>
 
+        {somenteLeitura ? (
+          <div className="privacy-note">
+            <b>Modo leitura</b>
+            <p>
+              Seu papel ({roleLabel(staff.role)}) tem esta aba liberada, mas só quem tem o papel
+              Administração pode alterar dados aqui. Você vê tudo, sem os formulários de edição.
+            </p>
+          </div>
+        ) : null}
+
         {/* Abas por URL: o conteúdo é do servidor e o link é compartilhável. */}
         <div className="detail-tabs">
           {TABS.map(tab => (
@@ -100,10 +117,14 @@ export default async function Page({ searchParams }: { searchParams: Promise<Sea
           ))}
         </div>
 
-        {filters.aba === "organizacao" ? <OrganizacaoPanel /> : null}
-        {filters.aba === "unidades" ? <UnidadesPanel filters={filters} /> : null}
-        {filters.aba === "categorias" ? <CategoriasPanel filters={filters} /> : null}
-        {filters.aba === "equipe" ? <EquipePanel filters={filters} /> : null}
+        {filters.aba === "organizacao" ? <OrganizacaoPanel readOnly={somenteLeitura} /> : null}
+        {filters.aba === "unidades" ? (
+          <UnidadesPanel filters={filters} readOnly={somenteLeitura} />
+        ) : null}
+        {filters.aba === "categorias" ? (
+          <CategoriasPanel filters={filters} readOnly={somenteLeitura} />
+        ) : null}
+        {filters.aba === "equipe" ? <EquipePanel filters={filters} readOnly={somenteLeitura} /> : null}
       </section>
     </>
   );

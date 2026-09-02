@@ -15,6 +15,7 @@ import {
   onlyDigits,
   slugifyCode,
 } from "@/lib/admin/configuracoes";
+import { CONFIGURABLE_NAV_ITEMS } from "@/lib/admin/navItems";
 
 /**
  * Mutações de Configurações. Todas rodam sob RLS (`createClient`): quem
@@ -681,4 +682,49 @@ export async function alterarSituacaoMembro(
         ? "Acesso suspenso. A pessoa continua autenticada até o próximo carregamento e cai em /sem-acesso."
         : "Acesso liberado. A pessoa entra no painel no próximo carregamento.",
   };
+}
+
+// ── Permissões por cargo ─────────────────────────────────────────────────────
+
+const NAV_KEYS = CONFIGURABLE_NAV_ITEMS.map(item => item.key);
+
+const permissoesSchema = z.object({
+  role: z.enum(["triagem", "investigador", "comite"], "Escolha um cargo."),
+});
+
+/**
+ * Grava as 6 linhas do cargo (uma por item de `CONFIGURABLE_NAV_ITEMS`), não
+ * só as marcadas — assim a tabela nunca fica ambígua entre "não configurado"
+ * (cai no `defaultRoles` de `isNavVisible`) e "desmarcado" (`visible: false`
+ * explícito). Quem recusa de verdade é `role_nav_permissions_write` (exige
+ * `admin`); o guard aqui é só cortesia, como em toda esta seção.
+ */
+export async function atualizarPermissoesPapel(
+  _prev: ActionState,
+  formData: FormData,
+): Promise<ActionState> {
+  const parsed = permissoesSchema.safeParse({ role: text(formData, "role") });
+  if (!parsed.success) return { error: firstIssue(parsed.error) };
+
+  const staff = await getStaffContext();
+  const supabase = await createClient();
+
+  const marcados = new Set(formData.getAll("nav_key").map(String));
+  const linhas = NAV_KEYS.map(nav_key => ({
+    org_id: staff.orgId,
+    role: parsed.data.role,
+    nav_key,
+    visible: marcados.has(nav_key),
+  }));
+
+  const { error } = await supabase
+    .from("role_nav_permissions")
+    .upsert(linhas, { onConflict: "org_id,role,nav_key" });
+
+  if (error) {
+    return fail("alterar permissões", error.message, "Não foi possível salvar as permissões.");
+  }
+
+  revalidateSettings();
+  return { ok: true, aviso: "Permissões salvas. O menu muda no próximo carregamento da pessoa." };
 }

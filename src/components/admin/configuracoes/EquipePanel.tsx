@@ -1,16 +1,18 @@
 import Link from "next/link";
 
 import { createClient } from "@/lib/supabase/server";
-import { getStaffContext, roleLabel } from "@/lib/org/context";
+import { getStaffContext, getRoleNavOverrides, roleLabel } from "@/lib/org/context";
 import { formatDate } from "@/lib/admin/labels";
 import {
   MEMBER_STATUS_LABEL,
   ROLE_DESCRIPTION,
+  ROLE_ORDER,
   settingsHref,
   type SettingsFilters,
 } from "@/lib/admin/configuracoes";
+import { CONFIGURABLE_NAV_ITEMS, isNavVisible } from "@/lib/admin/navItems";
 import ConviteForm from "./ConviteForm";
-import { PapelForm, SituacaoForm, type Membro } from "./SettingsControls";
+import { PapelForm, PermissoesForm, SituacaoForm, type Membro } from "./SettingsControls";
 
 /**
  * Quem tem acesso ao canal, com papel e situação.
@@ -21,7 +23,13 @@ import { PapelForm, SituacaoForm, type Membro } from "./SettingsControls";
  * gravar — aqui o aviso só antecipa a recusa para que ninguém descubra o
  * problema depois de clicar.
  */
-export default async function EquipePanel({ filters }: { filters: SettingsFilters }) {
+export default async function EquipePanel({
+  filters,
+  readOnly = false,
+}: {
+  filters: SettingsFilters;
+  readOnly?: boolean;
+}) {
   const staff = await getStaffContext();
   const supabase = await createClient();
 
@@ -52,6 +60,7 @@ export default async function EquipePanel({ filters }: { filters: SettingsFilter
     membro => membro.role === "admin" && membro.status === "active",
   );
   const emEdicao = filters.membro ? membros.find(membro => membro.id === filters.membro) : undefined;
+  const overrides = await getRoleNavOverrides(staff.orgId);
 
   return (
     <>
@@ -85,13 +94,15 @@ export default async function EquipePanel({ filters }: { filters: SettingsFilter
                     : `Convidado em ${formatDate(membro.invited_at)} — ainda não entrou`}
                 </small>
               </b>
-              <Link
-                href={settingsHref("equipe", { membro: membro.id })}
-                aria-label={`Gerenciar o acesso de ${membro.full_name}`}
-                title="Gerenciar acesso"
-              >
-                ✎
-              </Link>
+              {readOnly ? null : (
+                <Link
+                  href={settingsHref("equipe", { membro: membro.id })}
+                  aria-label={`Gerenciar o acesso de ${membro.full_name}`}
+                  title="Gerenciar acesso"
+                >
+                  ✎
+                </Link>
+              )}
             </div>
           );
         })}
@@ -111,7 +122,7 @@ export default async function EquipePanel({ filters }: { filters: SettingsFilter
         </div>
       ) : null}
 
-      {emEdicao ? (
+      {emEdicao && !readOnly ? (
         <>
           <div className="privacy-note">
             <b>Gerenciando o acesso de {emEdicao.full_name}</b>
@@ -134,27 +145,63 @@ export default async function EquipePanel({ filters }: { filters: SettingsFilter
         </>
       ) : null}
 
+      {readOnly ? null : (
+        <>
+          <div className="list-head">
+            <span>Convidar alguém</span>
+            <small>o acesso ao painel é só por convite</small>
+          </div>
+
+          <div className="privacy-note">
+            <b>O que acontece ao convidar</b>
+            <p>
+              O Supabase cria a conta de autenticação e o vínculo entra como{" "}
+              <strong>Convidado</strong>. A pessoa abre o link, define a senha e o próprio primeiro
+              acesso ativa o vínculo — não é preciso voltar aqui para liberar. Se o link não
+              funcionar para ela, você pode liberar o acesso manualmente na linha dela acima.
+            </p>
+            <p>
+              Quem chega vê <strong>denúncias reais</strong>, com relatos de assédio e, conforme o
+              papel, pedidos de quebra de sigilo. Convide pelo papel mais estreito que resolve: dá
+              para promover depois, e cada mudança fica na trilha de auditoria.
+            </p>
+          </div>
+
+          <ConviteForm />
+        </>
+      )}
+
       <div className="list-head">
-        <span>Convidar alguém</span>
-        <small>o acesso ao painel é só por convite</small>
+        <span>Permissões por cargo</span>
+        <small>quais abas do menu admin cada cargo enxerga</small>
       </div>
 
       <div className="privacy-note">
-        <b>O que acontece ao convidar</b>
+        <b>Como funciona</b>
         <p>
-          O Supabase cria a conta de autenticação e o vínculo entra como{" "}
-          <strong>Convidado</strong>. A pessoa abre o link, define a senha e o próprio primeiro
-          acesso ativa o vínculo — não é preciso voltar aqui para liberar. Se o link não funcionar
-          para ela, você pode liberar o acesso manualmente na linha dela acima.
-        </p>
-        <p>
-          Quem chega vê <strong>denúncias reais</strong>, com relatos de assédio e, conforme o
-          papel, pedidos de quebra de sigilo. Convide pelo papel mais estreito que resolve: dá para
-          promover depois, e cada mudança fica na trilha de auditoria.
+          Administração sempre enxerga tudo — este painel não decide o acesso dela. Para os outros
+          três cargos, desmarque uma aba para escondê-la do menu dessa pessoa. &ldquo;Visão
+          geral&rdquo; fica sempre visível: sem ela, quem não tem mais nenhuma aba liberada não
+          teria para onde ir ao entrar.
         </p>
       </div>
 
-      <ConviteForm />
+      {readOnly
+        ? ROLE_ORDER.filter(role => role !== "admin").map(role => (
+            <div className="review-grid" key={role}>
+              <article>
+                <small>{roleLabel(role).toUpperCase()}</small>
+                <p>
+                  {CONFIGURABLE_NAV_ITEMS.filter(item => isNavVisible(role, item, overrides))
+                    .map(item => item.label)
+                    .join(", ") || "nenhuma aba além de Visão geral"}
+                </p>
+              </article>
+            </div>
+          ))
+        : ROLE_ORDER.filter(role => role !== "admin").map(role => (
+            <PermissoesForm key={role} role={role} overrides={overrides} />
+          ))}
     </>
   );
 }

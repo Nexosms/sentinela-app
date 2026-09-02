@@ -26,7 +26,13 @@ import { AlternarCategoriaForm, CategoriaForm, type Categoria } from "./Settings
  *    renomeasse "Sobrecarga de trabalho", o Grupo B deixaria de ser inventário.
  *  - `org_id` preenchido — as da organização, criadas aqui.
  */
-export default async function CategoriasPanel({ filters }: { filters: SettingsFilters }) {
+export default async function CategoriasPanel({
+  filters,
+  readOnly = false,
+}: {
+  filters: SettingsFilters;
+  readOnly?: boolean;
+}) {
   const staff = await getStaffContext();
   const supabase = await createClient();
 
@@ -117,14 +123,18 @@ export default async function CategoriasPanel({ filters }: { filters: SettingsFi
             <span className={riskClass(categoria.default_risk)}>
               {RISK_LABEL[categoria.default_risk]}
             </span>
-            <Link
-              href={settingsHref("categorias", { categoria: categoria.id })}
-              aria-label={`Editar a categoria ${categoria.label_pt}`}
-              title="Editar"
-            >
-              ✎
-            </Link>
-            <AlternarCategoriaForm categoria={categoria} />
+            {readOnly ? null : (
+              <>
+                <Link
+                  href={settingsHref("categorias", { categoria: categoria.id })}
+                  aria-label={`Editar a categoria ${categoria.label_pt}`}
+                  title="Editar"
+                >
+                  ✎
+                </Link>
+                <AlternarCategoriaForm categoria={categoria} />
+              </>
+            )}
           </div>
         ))}
         {proprias.length === 0 ? (
@@ -142,23 +152,27 @@ export default async function CategoriasPanel({ filters }: { filters: SettingsFi
         ) : null}
       </div>
 
-      <div className="privacy-note">
-        <b>{emEdicao ? `Editando: ${emEdicao.label_pt}` : "Nova categoria da organização"}</b>
-        <p>
-          O código é gerado do rótulo e não muda depois de criado — ele é a chave que liga o relato
-          ao inventário de riscos, e trocá-la reescreveria o histórico.
-          {emEdicao ? (
-            <>
-              {" "}
-              <Link className="quiet-link" href={settingsHref("categorias")}>
-                Cancelar a edição e criar uma nova.
-              </Link>
-            </>
-          ) : null}
-        </p>
-      </div>
+      {readOnly ? null : (
+        <>
+          <div className="privacy-note">
+            <b>{emEdicao ? `Editando: ${emEdicao.label_pt}` : "Nova categoria da organização"}</b>
+            <p>
+              O código é gerado do rótulo e não muda depois de criado — ele é a chave que liga o
+              relato ao inventário de riscos, e trocá-la reescreveria o histórico.
+              {emEdicao ? (
+                <>
+                  {" "}
+                  <Link className="quiet-link" href={settingsHref("categorias")}>
+                    Cancelar a edição e criar uma nova.
+                  </Link>
+                </>
+              ) : null}
+            </p>
+          </div>
 
-      <CategoriaForm key={emEdicao?.id ?? "nova"} categoria={emEdicao} />
+          <CategoriaForm key={emEdicao?.id ?? "nova"} categoria={emEdicao} />
+        </>
+      )}
     </>
   );
 }

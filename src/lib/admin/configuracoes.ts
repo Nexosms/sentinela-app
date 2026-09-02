@@ -24,7 +24,7 @@ export const TABS = [
   { key: "organizacao", label: "Organização" },
   { key: "unidades", label: "Unidades" },
   { key: "categorias", label: "Categorias" },
-  { key: "equipe", label: "Equipe" },
+  { key: "equipe", label: "Time e permissões" },
 ] as const;
 
 export type SettingsTab = (typeof TABS)[number]["key"];

@@ -18,7 +18,13 @@ import { AlternarUnidadeForm, UnidadeForm, type Unidade } from "./SettingsContro
  * mantém a tela como Server Component, torna o estado compartilhável por link
  * e evita montar quinze formulários que ninguém vai usar.
  */
-export default async function UnidadesPanel({ filters }: { filters: SettingsFilters }) {
+export default async function UnidadesPanel({
+  filters,
+  readOnly = false,
+}: {
+  filters: SettingsFilters;
+  readOnly?: boolean;
+}) {
   const staff = await getStaffContext();
   const supabase = await createClient();
 
@@ -64,14 +70,18 @@ export default async function UnidadesPanel({ filters }: { filters: SettingsFilt
                 </small>
               )}
             </b>
-            <Link
-              href={settingsHref("unidades", { unidade: unidade.id })}
-              aria-label={`Editar a unidade ${unidade.name}`}
-              title="Editar"
-            >
-              ✎
-            </Link>
-            <AlternarUnidadeForm unidade={unidade} />
+            {readOnly ? null : (
+              <>
+                <Link
+                  href={settingsHref("unidades", { unidade: unidade.id })}
+                  aria-label={`Editar a unidade ${unidade.name}`}
+                  title="Editar"
+                >
+                  ✎
+                </Link>
+                <AlternarUnidadeForm unidade={unidade} />
+              </>
+            )}
           </div>
         ))}
         {unidades.length === 0 ? (
@@ -88,24 +98,28 @@ export default async function UnidadesPanel({ filters }: { filters: SettingsFilt
         ) : null}
       </div>
 
-      <div className="privacy-note">
-        <b>{emEdicao ? `Editando: ${emEdicao.name}` : "Nova unidade"}</b>
-        <p>
-          A unidade escolhida no relato é o eixo de quase todo relatório — e é ela que decide se uma
-          célula fica abaixo do limiar de supressão. Unidade muito pequena tende a ter os números
-          suprimidos, o que é proteção, não falha.
-          {emEdicao ? (
-            <>
-              {" "}
-              <Link className="quiet-link" href={settingsHref("unidades")}>
-                Cancelar a edição e criar uma nova.
-              </Link>
-            </>
-          ) : null}
-        </p>
-      </div>
+      {readOnly ? null : (
+        <>
+          <div className="privacy-note">
+            <b>{emEdicao ? `Editando: ${emEdicao.name}` : "Nova unidade"}</b>
+            <p>
+              A unidade escolhida no relato é o eixo de quase todo relatório — e é ela que decide se
+              uma célula fica abaixo do limiar de supressão. Unidade muito pequena tende a ter os
+              números suprimidos, o que é proteção, não falha.
+              {emEdicao ? (
+                <>
+                  {" "}
+                  <Link className="quiet-link" href={settingsHref("unidades")}>
+                    Cancelar a edição e criar uma nova.
+                  </Link>
+                </>
+              ) : null}
+            </p>
+          </div>
 
-      <UnidadeForm key={emEdicao?.id ?? "nova"} unidade={emEdicao} />
+          <UnidadeForm key={emEdicao?.id ?? "nova"} unidade={emEdicao} />
+        </>
+      )}
     </>
   );
 }

@@ -203,6 +203,7 @@ Aplicadas via MCP do Supabase, em ordem. `supabase migration list` no projeto
 | 024b | revoga `sweep_overdue()` de `authenticated` — os privilégios padrão a haviam publicado |
 | 025 | `public.next_code()` — wrapper, porque o schema `app` não é exposto pelo PostgREST |
 | 026 | escrita nas tabelas-filhas de investigação: exige apuração aberta e papel de escrita |
+| 028 | `role_nav_permissions` — permissões de navegação por cargo (aba "Time e permissões"), amplia `app.write_audit` com `nav_permission.changed` |
 
 ### Armadilhas registradas
 

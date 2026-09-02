@@ -7,6 +7,7 @@ import {
   alterarSituacaoMembro,
   alternarCategoria,
   alternarUnidade,
+  atualizarPermissoesPapel,
   criarCategoria,
   criarUnidade,
   salvarCategoria,
@@ -32,6 +33,7 @@ import {
   type RiskLevel,
 } from "@/lib/admin/configuracoes";
 import { roleLabel } from "@/lib/admin/labels";
+import { CONFIGURABLE_NAV_ITEMS, isNavVisible, type NavOverrides } from "@/lib/admin/navItems";
 
 /**
  * As folhas interativas de Configurações. São client components pelo
@@ -584,5 +586,56 @@ export function SituacaoForm({ membro }: { membro: Membro }) {
       </p>
       <Feedback state={state} />
     </>
+  );
+}
+
+// ── Permissões por cargo ─────────────────────────────────────────────────────
+
+/**
+ * Uma por cargo não-admin. Admin nunca aparece aqui — `role_nav_permissions`
+ * recusa a linha (`role_nav_permissions_not_admin`) e `isNavVisible()` nunca
+ * filtra o papel Administração, então não haveria o que configurar.
+ */
+/** Só para caber nas duas colunas de `.category-groups` — sem significado além disso. */
+const NAV_ITEM_COLUMNS = [
+  { title: "Fluxo de trabalho", items: CONFIGURABLE_NAV_ITEMS.slice(0, 3) },
+  { title: "Gestão e leitura", items: CONFIGURABLE_NAV_ITEMS.slice(3) },
+];
+
+export function PermissoesForm({ role, overrides }: { role: AppRole; overrides: NavOverrides }) {
+  const [state, action, pending] = useActionState(atualizarPermissoesPapel, EMPTY);
+
+  return (
+    <form action={action}>
+      <input type="hidden" name="role" value={role} />
+      <fieldset className="category-multiselect">
+        <legend>{roleLabel(role)}</legend>
+        <p>{ROLE_DESCRIPTION[role]}</p>
+        <div className="category-groups">
+          {NAV_ITEM_COLUMNS.map(coluna => (
+            <section key={coluna.title}>
+              <h3>{coluna.title}</h3>
+              {coluna.items.map(item => (
+                <label key={item.key}>
+                  <input
+                    type="checkbox"
+                    name="nav_key"
+                    value={item.key}
+                    defaultChecked={isNavVisible(role, item, overrides)}
+                  />
+                  {item.label}
+                </label>
+              ))}
+            </section>
+          ))}
+        </div>
+      </fieldset>
+      <div className="case-actions">
+        <button className="primary-button" type="submit" disabled={pending}>
+          {pending ? "Salvando…" : `Salvar permissões de ${roleLabel(role)}`} <span>→</span>
+        </button>
+      </div>
+      <Feedback state={state} />
+    </form>
   );
 }

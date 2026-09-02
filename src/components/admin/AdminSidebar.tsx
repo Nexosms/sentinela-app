@@ -2,16 +2,10 @@ import Link from "next/link";
 import Brand from "@/components/brand/Brand";
 import AdminNavLinks, { type NavItem } from "./AdminNavLinks";
 import SignOutButton from "./SignOutButton";
-import { hasAnyRole, roleLabel, type AppRole } from "@/lib/org/context";
+import { roleLabel, type AppRole } from "@/lib/org/context";
+import { NAV_ITEMS, CONFIGURACOES_ITEM, isNavVisible, type NavOverrides } from "@/lib/admin/navItems";
 
-const ALL_ITEMS: (NavItem & { roles: readonly AppRole[] })[] = [
-  { href: "/admin",                 label: "Visão geral",    icon: "⌂", roles: ["admin", "triagem", "investigador", "comite"] },
-  { href: "/admin/denuncias",       label: "Denúncias",      icon: "□", roles: ["admin", "triagem", "investigador"] },
-  { href: "/admin/investigacoes",   label: "Investigações",  icon: "⌕", roles: ["admin", "triagem", "investigador"] },
-  { href: "/admin/planos-de-acao",  label: "Planos de ação", icon: "✓", roles: ["admin", "triagem", "investigador", "comite"] },
-  { href: "/admin/relatorios",      label: "Relatórios",     icon: "▤", roles: ["admin", "comite"] },
-  { href: "/admin/auditoria",       label: "Auditoria",      icon: "⌁", roles: ["admin", "comite"] },
-];
+const SIDEBAR_ITEMS = NAV_ITEMS.filter(entry => entry.key !== "configuracoes");
 
 export default function AdminSidebar({
   orgName,
@@ -19,14 +13,16 @@ export default function AdminSidebar({
   email,
   role,
   pendingCount,
+  navOverrides,
 }: {
   orgName: string;
   fullName: string;
   email: string;
   role: AppRole;
   pendingCount: number;
+  navOverrides: NavOverrides;
 }) {
-  const items: NavItem[] = ALL_ITEMS.filter(entry => hasAnyRole(role, entry.roles)).map(entry => {
+  const items: NavItem[] = SIDEBAR_ITEMS.filter(entry => isNavVisible(role, entry, navOverrides)).map(entry => {
     const item: NavItem = { href: entry.href, label: entry.label, icon: entry.icon };
     return item.href === "/admin/denuncias" && pendingCount > 0
       ? { ...item, badge: pendingCount }
@@ -60,7 +56,7 @@ export default function AdminSidebar({
       </div>
       <AdminNavLinks items={items} />
       <div className="sidebar-bottom">
-        {role === "admin" ? (
+        {isNavVisible(role, CONFIGURACOES_ITEM, navOverrides) ? (
           <Link className="sidebar-link" href="/admin/configuracoes">
             ⚙ Configurações
           </Link>

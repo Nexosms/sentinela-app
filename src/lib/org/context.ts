@@ -4,6 +4,7 @@ import { cache } from "react";
 import { redirect } from "next/navigation";
 import { createClient, getAuthenticatedUser } from "@/lib/supabase/server";
 import type { Database } from "@/lib/supabase/database.types";
+import type { NavOverrides } from "@/lib/admin/navItems";
 
 export type AppRole = Database["public"]["Enums"]["app_role"];
 
@@ -52,6 +53,32 @@ export const getStaffContext = cache(async (): Promise<StaffContext> => {
     orgName: data.organizations.trade_name,
     role: data.role,
   };
+});
+
+/**
+ * Sobreposições de `role_nav_permissions` da organização, como
+ * `{ triagem: { relatorios: false } }`. `cache()` pelo mesmo motivo de
+ * `getStaffContext`: `admin/layout.tsx` (sidebar) e
+ * `admin/configuracoes/page.tsx` (gate da própria aba) pedem isto na mesma
+ * requisição.
+ *
+ * Sem nenhuma linha na tabela — organização nova, ou que nunca abriu "Time e
+ * permissões" — devolve `{}`, e `isNavVisible()` cai no `defaultRoles` de
+ * cada item: o comportamento de hoje, sem exceção.
+ */
+export const getRoleNavOverrides = cache(async (orgId: string): Promise<NavOverrides> => {
+  const supabase = await createClient();
+  const { data } = await supabase
+    .from("role_nav_permissions")
+    .select("role, nav_key, visible")
+    .eq("org_id", orgId);
+
+  const overrides: NavOverrides = {};
+  for (const row of data ?? []) {
+    const porCargo = (overrides[row.role] ??= {});
+    porCargo[row.nav_key] = row.visible;
+  }
+  return overrides;
 });
 
 /**

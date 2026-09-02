@@ -6,7 +6,7 @@ import { OrganizacaoForm, type Organizacao } from "./SettingsControls";
  * Dados da organização. Server Component: lê sob RLS (`org_read`) e entrega o
  * formulário, que é a única folha cliente.
  */
-export default async function OrganizacaoPanel() {
+export default async function OrganizacaoPanel({ readOnly = false }: { readOnly?: boolean }) {
   const staff = await getStaffContext();
   const supabase = await createClient();
 
@@ -74,7 +74,7 @@ export default async function OrganizacaoPanel() {
           </p>
         </article>
       </div>
-      <OrganizacaoForm org={org} />
+      {readOnly ? null : <OrganizacaoForm org={org} />}
     </>
   );
 }
