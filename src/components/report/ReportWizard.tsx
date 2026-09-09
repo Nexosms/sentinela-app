@@ -55,10 +55,14 @@ const GROUP_ORDER = ["violencia_conduta", "organizacao_trabalho"];
  */
 export default function ReportWizard({
   orgSlug,
+  orgName,
+  orgCnpjFormatted,
   units,
   categories,
 }: {
   orgSlug: string;
+  orgName: string;
+  orgCnpjFormatted: string | null;
   units: OrgUnitOption[];
   categories: CategoryOption[];
 }) {
@@ -164,7 +168,6 @@ export default function ReportWizard({
         orgUnitId: state.orgUnitId,
         unitUnknown: state.unitUnknown,
         periodText: state.periodText,
-        city: state.city,
         location: state.location,
         accused: state.accused,
         witnesses: state.witnesses,
@@ -296,7 +299,6 @@ export default function ReportWizard({
           orgUnitId: state.orgUnitId,
           unitUnknown: state.unitUnknown,
           periodText: state.periodText,
-          city: state.city,
           location: state.location,
           accused: state.accused,
           witnesses: state.witnesses,
@@ -329,6 +331,7 @@ export default function ReportWizard({
     () => ({
       state,
       dispatch,
+      org: { name: orgName, cnpjFormatted: orgCnpjFormatted },
       units,
       categories,
       categoryGroups,
@@ -344,6 +347,8 @@ export default function ReportWizard({
     }),
     [
       state,
+      orgName,
+      orgCnpjFormatted,
       units,
       categories,
       categoryGroups,

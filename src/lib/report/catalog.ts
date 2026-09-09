@@ -17,7 +17,13 @@ import { createClient } from "@/lib/supabase/server";
  */
 
 const catalogSchema = z.object({
-  org: z.object({ id: z.uuid(), slug: z.string(), name: z.string() }),
+  org: z.object({
+    id: z.uuid(),
+    slug: z.string(),
+    name: z.string(),
+    legal_name: z.string(),
+    cnpj: z.string().nullable(),
+  }),
   units: z.array(
     z.object({
       id: z.uuid(),
@@ -53,9 +59,19 @@ export type CategoryOption = {
 
 export type ReportCatalog = {
   orgSlug: string;
+  orgName: string;
+  /** CNPJ já formatado (`00.000.000/0000-00`), ou `null` se a organização não tiver um cadastrado. */
+  orgCnpjFormatted: string | null;
   units: OrgUnitOption[];
   categories: CategoryOption[];
 };
+
+/** Só para exibição pública. Espelha `formatCnpj` de `lib/admin/configuracoes.ts`,
+ *  sem importar dali — o catálogo público não deve depender de código do admin. */
+function formatCnpj(digits: string | null): string | null {
+  if (!digits || digits.length !== 14) return null;
+  return `${digits.slice(0, 2)}.${digits.slice(2, 5)}.${digits.slice(5, 8)}/${digits.slice(8, 12)}-${digits.slice(12)}`;
+}
 
 export async function loadReportCatalog(
   orgSlug: string = publicEnv.defaultOrgSlug,
@@ -72,6 +88,8 @@ export async function loadReportCatalog(
 
   return {
     orgSlug: parsed.data.org.slug,
+    orgName: parsed.data.org.legal_name,
+    orgCnpjFormatted: formatCnpj(parsed.data.org.cnpj),
     units: parsed.data.units.map(unit => ({
       id: unit.id,
       label: unit.city ? `${unit.name} · ${unit.city}` : unit.name,

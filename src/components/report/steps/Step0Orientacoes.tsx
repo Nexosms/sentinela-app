@@ -4,7 +4,7 @@ import { FieldError } from "../fields";
 import { useWizard } from "../wizardState";
 
 export default function Step0Orientacoes() {
-  const { state, update, clearError } = useWizard();
+  const { state, org, update, clearError } = useWizard();
   const { errors } = state;
 
   return (
@@ -14,6 +14,10 @@ export default function Step0Orientacoes() {
       <p className="lead">
         Leia estas orientações. Elas explicam o que esperar deste canal e ajudam a proteger você e as
         pessoas envolvidas.
+      </p>
+      <p className="org-identity">
+        Este canal é operado por <strong>{org.name}</strong>
+        {org.cnpjFormatted ? ` · CNPJ ${org.cnpjFormatted}` : ""}.
       </p>
       <div className="guidance-list">
         <article>

@@ -20,6 +20,8 @@ export default async function RelatoPage() {
   return (
     <ReportWizard
       orgSlug={catalog.orgSlug}
+      orgName={catalog.orgName}
+      orgCnpjFormatted={catalog.orgCnpjFormatted}
       units={catalog.units}
       categories={catalog.categories}
     />

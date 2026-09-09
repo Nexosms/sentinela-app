@@ -82,7 +82,6 @@ export const step2Schema = z
     orgUnitId: z.uuid().nullable(),
     unitUnknown: z.boolean(),
     periodText: trimmed(200).min(1, "Informe a data ou o período da ocorrência."),
-    city: trimmed(200).min(1, "Informe a cidade ou o local da ocorrência."),
     location: trimmed(300).optional(),
     accused: trimmed(300).min(1, 'Informe a pessoa, função ou escreva "não identificado".'),
     witnesses: trimmed(300).optional(),

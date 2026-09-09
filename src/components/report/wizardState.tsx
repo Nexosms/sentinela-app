@@ -46,7 +46,6 @@ export type WizardState = {
   orgUnitId: string | null;
   unitUnknown: boolean;
   periodText: string;
-  city: string;
   location: string;
   accused: string;
   witnesses: string;
@@ -81,7 +80,6 @@ export const initialWizardState: WizardState = {
   orgUnitId: null,
   unitUnknown: false,
   periodText: "",
-  city: "",
   location: "",
   accused: "",
   witnesses: "",
@@ -113,7 +111,6 @@ export type FieldKey =
   | "orgUnitId"
   | "unitUnknown"
   | "periodText"
-  | "city"
   | "location"
   | "accused"
   | "witnesses"
@@ -228,6 +225,8 @@ export type CategoryGroup = { key: string; title: string; items: CategoryOption[
 export type WizardContextValue = {
   state: WizardState;
   dispatch: Dispatch<WizardAction>;
+  /** Identificação institucional de quem opera o canal, para exibir na Etapa 0. */
+  org: { name: string; cnpjFormatted: string | null };
   units: OrgUnitOption[];
   categories: CategoryOption[];
   categoryGroups: CategoryGroup[];

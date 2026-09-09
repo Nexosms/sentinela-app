@@ -218,7 +218,6 @@ export async function POST(request: Request): Promise<Response> {
       org_unit_id: input.orgUnitId,
       unit_unknown: input.unitUnknown,
       period_text: input.periodText,
-      city: input.city,
       location: input.location || null,
       accused: input.accused,
       witnesses: input.witnesses || null,

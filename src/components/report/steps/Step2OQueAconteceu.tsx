@@ -1,5 +1,7 @@
 "use client";
 
+import { useState } from "react";
+
 import { RECURRENCES, RELATIONSHIPS } from "@/lib/report/schema";
 
 import { FieldError, FieldTitle } from "../fields";
@@ -14,6 +16,7 @@ export default function Step2OQueAconteceu() {
   const { errors } = state;
 
   const unitValue = state.unitUnknown ? UNIT_UNKNOWN : (state.orgUnitId ?? "");
+  const [activeGroup, setActiveGroup] = useState(categoryGroups[0]?.key ?? "");
 
   return (
     <>
@@ -86,22 +89,6 @@ export default function Step2OQueAconteceu() {
           />
           <FieldError message={errors.periodText} />
         </label>
-        <label className={errors.city ? "field-error" : ""}>
-          <FieldTitle
-            label="Cidade ou local da ocorrência"
-            info="Informe a cidade, setor, ambiente físico ou canal digital onde a situação ocorreu."
-          />
-          <input
-            value={state.city}
-            aria-invalid={!!errors.city}
-            onChange={e => {
-              update("city", e.target.value);
-              clearError("city");
-            }}
-            placeholder="Cidade, setor ou ambiente digital"
-          />
-          <FieldError message={errors.city} />
-        </label>
         <label className={errors.accused ? "field-error" : ""}>
           <FieldTitle
             label="Pessoa(s) envolvida(s) no relato"
@@ -165,22 +152,35 @@ export default function Step2OQueAconteceu() {
           />
         </legend>
         <p>Você pode selecionar mais de uma opção.</p>
-        <div className="category-groups">
+        <div className="detail-tabs">
           {categoryGroups.map(group => (
-            <section key={group.key}>
-              <h3>{group.title}</h3>
-              {group.items.map(item => (
-                <label key={item.id}>
-                  <input
-                    type="checkbox"
-                    checked={state.categoryIds.includes(item.id)}
-                    onChange={() => toggleCategory(item.id)}
-                  />
-                  <span>{item.label}</span>
-                </label>
-              ))}
-            </section>
+            <button
+              type="button"
+              key={group.key}
+              className={activeGroup === group.key ? "active" : ""}
+              onClick={() => setActiveGroup(group.key)}
+            >
+              {group.title}
+            </button>
           ))}
+        </div>
+        <div className="category-groups single-column">
+          {categoryGroups
+            .filter(group => group.key === activeGroup)
+            .map(group => (
+              <section key={group.key}>
+                {group.items.map(item => (
+                  <label key={item.id}>
+                    <input
+                      type="checkbox"
+                      checked={state.categoryIds.includes(item.id)}
+                      onChange={() => toggleCategory(item.id)}
+                    />
+                    <span>{item.label}</span>
+                  </label>
+                ))}
+              </section>
+            ))}
         </div>
         <FieldError message={errors.categoryIds} />
         {needsSpecification && (

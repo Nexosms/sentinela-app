@@ -204,6 +204,8 @@ Aplicadas via MCP do Supabase, em ordem. `supabase migration list` no projeto
 | 025 | `public.next_code()` — wrapper, porque o schema `app` não é exposto pelo PostgREST |
 | 026 | escrita nas tabelas-filhas de investigação: exige apuração aberta e papel de escrita |
 | 028 | `role_nav_permissions` — permissões de navegação por cargo (aba "Time e permissões"), amplia `app.write_audit` com `nav_permission.changed` |
+| 029 | corrige `app.audit_org_settings()` — `v_campos \|\| 'campo'` (ambíguo entre array‖array e array‖elemento) quebrava toda gravação em `organizations` que mudasse qualquer um dos 8 campos observados; troca para `array_append` |
+| 030 | `get_report_catalog()` expõe `legal_name`/`cnpj` da organização, para a identificação institucional na 1ª etapa do relato |
 
 ### Armadilhas registradas
 
