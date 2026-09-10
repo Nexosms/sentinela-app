@@ -3,9 +3,11 @@
 import { z } from "zod";
 
 import { createAdminClient } from "@/lib/supabase/admin";
+import { createClient } from "@/lib/supabase/server";
 import { getStaffContext, isNexoAdmin } from "@/lib/org/context";
 import { onlyDigits, isValidCnpj } from "@/lib/admin/configuracoes";
 import { provisionAuthUser } from "@/lib/admin/authProvisioning";
+import { relatoUrl } from "@/lib/admin/clientes";
 
 /**
  * Cadastro de empresa-cliente. Só a equipe Nexo (`isNexoAdmin()`) chega aqui —
@@ -35,6 +37,7 @@ export type ActionState = {
   emailSent?: boolean;
   novaOrgId?: string;
   novaOrgSlug?: string;
+  relatoUrl?: string;
 };
 
 const schema = z.object({
@@ -146,5 +149,67 @@ export async function criarEmpresaCliente(_prev: ActionState, formData: FormData
     };
   }
 
-  return { ok: true, inviteUrl, emailSent, novaOrgId: org.id, novaOrgSlug: org.slug };
+  return {
+    ok: true,
+    inviteUrl,
+    emailSent,
+    novaOrgId: org.id,
+    novaOrgSlug: org.slug,
+    relatoUrl: relatoUrl(org.slug),
+  };
+}
+
+/**
+ * Edita os dados cadastrais de uma empresa-cliente já existente. Ao contrário
+ * de `criarEmpresaCliente`, isto NÃO precisa de service role: `org_update`
+ * já autoriza sob RLS quem tem papel admin naquela organização — independente
+ * de qual organização está "ativa" no cookie no momento.
+ */
+export type EditState = { ok?: true; error?: string };
+
+const editSchema = z.object({
+  orgId: z.uuid(),
+  tradeName: z.string().trim().min(2, "Informe o nome fantasia.").max(120),
+  legalName: z.string().trim().min(2, "Informe a razão social.").max(160),
+  cnpj: z
+    .string()
+    .trim()
+    .optional()
+    .transform(value => (value ? onlyDigits(value) : ""))
+    .refine(value => value === "" || isValidCnpj(value), "CNPJ inválido."),
+});
+
+export async function editarEmpresaCliente(_prev: EditState, formData: FormData): Promise<EditState> {
+  const parsed = editSchema.safeParse({
+    orgId: text(formData, "orgId"),
+    tradeName: text(formData, "tradeName"),
+    legalName: text(formData, "legalName"),
+    cnpj: text(formData, "cnpj"),
+  });
+  if (!parsed.success) return { error: parsed.error.issues[0]?.message ?? "Dados inválidos." };
+
+  const supabase = await createClient();
+  const { data, error } = await supabase
+    .from("organizations")
+    .update({
+      trade_name: parsed.data.tradeName,
+      legal_name: parsed.data.legalName,
+      cnpj: parsed.data.cnpj || null,
+    })
+    .eq("id", parsed.data.orgId)
+    .select("id")
+    .maybeSingle();
+
+  if (error) {
+    if (error.code === "23505") return { error: "Já existe outra organização com este CNPJ." };
+    console.error("[clientes] editar organização: %s", error.message);
+    return { error: "Não foi possível salvar. Tente novamente." };
+  }
+  if (!data) {
+    return {
+      error: "Nada foi gravado: você não é administrador desta organização, ou ela não existe mais.",
+    };
+  }
+
+  return { ok: true };
 }

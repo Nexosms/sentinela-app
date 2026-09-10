@@ -31,17 +31,38 @@ export default function ClienteForm() {
           <small>
             {state.emailSent
               ? "O contato recebeu um e-mail para definir a própria senha."
-              : "O e-mail não pôde ser enviado por este projeto Supabase — entregue o link abaixo você mesmo."}
+              : "O e-mail não pôde ser enviado por este projeto Supabase — entregue o link de acesso abaixo você mesmo."}
           </small>
-          {state.inviteUrl ? (
-            <div className="privacy-note" style={{ marginTop: 14 }}>
-              <b>Link de convite do contato — copie e mande você mesmo</b>
+
+          {state.relatoUrl ? (
+            <div className="privacy-note" style={{ marginTop: 14, borderColor: "var(--teal)" }}>
+              <b>Link do relato — dê este aos colaboradores da empresa</b>
+              <p>
+                É este que a empresa divulga para quem vai registrar um relato. Não expira e pode ser
+                usado por qualquer pessoa, quantas vezes for preciso.
+              </p>
               <label className="wide-field">
                 Link
-                <textarea readOnly rows={3} value={state.inviteUrl} aria-label="Link de convite" />
+                <textarea readOnly rows={2} value={state.relatoUrl} aria-label="Link do relato" />
               </label>
             </div>
           ) : null}
+
+          {state.inviteUrl ? (
+            <div className="privacy-note" style={{ marginTop: 14 }}>
+              <b>Link de acesso do contato — uso único, só para ele entrar no painel</b>
+              <p>
+                Diferente do link do relato acima: este é só para{" "}
+                <strong>a pessoa cadastrada como contato</strong> definir a própria senha e acessar o
+                painel administrativo (papel Comitê). Vale uma vez e expira.
+              </p>
+              <label className="wide-field">
+                Link
+                <textarea readOnly rows={3} value={state.inviteUrl} aria-label="Link de acesso do contato" />
+              </label>
+            </div>
+          ) : null}
+
           {state.novaOrgId ? (
             <form action={trocarOrganizacaoAtiva} style={{ marginTop: 14 }}>
               <input type="hidden" name="orgId" value={state.novaOrgId} />

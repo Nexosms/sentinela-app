@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import Link from "next/link";
 
 import AdminTopbar from "@/components/admin/AdminTopbar";
 import ClienteForm from "@/components/admin/clientes/ClienteForm";
@@ -54,6 +55,13 @@ export default async function ClientesPage() {
                   /relato/{org.slug} · {roleLabel(org.role)}
                 </small>
               </b>
+              <Link
+                href={`/admin/clientes/${org.orgId}`}
+                aria-label={`Ver e editar ${org.tradeName}`}
+                title="Ver e editar"
+              >
+                ✎
+              </Link>
             </div>
           ))}
         </div>
