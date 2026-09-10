@@ -4,7 +4,7 @@ import { useCallback, useEffect, useMemo, useReducer, useRef } from "react";
 import { useRouter } from "next/navigation";
 
 import Brand from "@/components/brand/Brand";
-import type { CategoryOption, OrgUnitOption } from "@/lib/report/catalog";
+import type { CategoryOption } from "@/lib/report/catalog";
 import {
   fieldErrors,
   step0Schema,
@@ -57,13 +57,11 @@ export default function ReportWizard({
   orgSlug,
   orgName,
   orgCnpjFormatted,
-  units,
   categories,
 }: {
   orgSlug: string;
   orgName: string;
   orgCnpjFormatted: string | null;
-  units: OrgUnitOption[];
   categories: CategoryOption[];
 }) {
   const router = useRouter();
@@ -165,8 +163,6 @@ export default function ReportWizard({
     if (state.step === 2) {
       const result = step2Schema.safeParse({
         relationship: state.relationship,
-        orgUnitId: state.orgUnitId,
-        unitUnknown: state.unitUnknown,
         periodText: state.periodText,
         location: state.location,
         accused: state.accused,
@@ -296,8 +292,6 @@ export default function ReportWizard({
           identityName: state.mode === "identified" ? state.identityName : undefined,
           identityContact: state.mode === "identified" ? state.identityContact : undefined,
           relationship: state.relationship,
-          orgUnitId: state.orgUnitId,
-          unitUnknown: state.unitUnknown,
           periodText: state.periodText,
           location: state.location,
           accused: state.accused,
@@ -332,7 +326,6 @@ export default function ReportWizard({
       state,
       dispatch,
       org: { name: orgName, cnpjFormatted: orgCnpjFormatted },
-      units,
       categories,
       categoryGroups,
       needsSpecification,
@@ -349,7 +342,6 @@ export default function ReportWizard({
       state,
       orgName,
       orgCnpjFormatted,
-      units,
       categories,
       categoryGroups,
       needsSpecification,

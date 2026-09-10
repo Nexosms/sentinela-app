@@ -2,7 +2,7 @@
 
 import { createContext, useContext, type Dispatch, type ReactNode } from "react";
 
-import type { CategoryOption, OrgUnitOption } from "@/lib/report/catalog";
+import type { CategoryOption } from "@/lib/report/catalog";
 
 /**
  * PRIVACIDADE — DECISÃO DELIBERADA
@@ -43,8 +43,6 @@ export type WizardState = {
   identityContact: string;
   // Etapa 2
   relationship: string;
-  orgUnitId: string | null;
-  unitUnknown: boolean;
   periodText: string;
   location: string;
   accused: string;
@@ -77,8 +75,6 @@ export const initialWizardState: WizardState = {
   identityName: "",
   identityContact: "",
   relationship: "",
-  orgUnitId: null,
-  unitUnknown: false,
   periodText: "",
   location: "",
   accused: "",
@@ -108,8 +104,6 @@ export type FieldKey =
   | "identityName"
   | "identityContact"
   | "relationship"
-  | "orgUnitId"
-  | "unitUnknown"
   | "periodText"
   | "location"
   | "accused"
@@ -227,7 +221,6 @@ export type WizardContextValue = {
   dispatch: Dispatch<WizardAction>;
   /** Identificação institucional de quem opera o canal, para exibir na Etapa 0. */
   org: { name: string; cnpjFormatted: string | null };
-  units: OrgUnitOption[];
   categories: CategoryOption[];
   categoryGroups: CategoryGroup[];
   /** Só as categorias marcadas que exigem detalhamento. */

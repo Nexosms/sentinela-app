@@ -12,8 +12,9 @@ export const metadata: Metadata = {
  *  evitam uma ida ao banco a cada abertura do formulário. */
 export const revalidate = 300;
 
-/** Sem slug: aponta para a organização padrão (`publicEnv.defaultOrgSlug`) —
- *  o ambiente demo da própria Nexo. Cada empresa-cliente usa `/relato/<slug>`. */
-export default async function Page() {
-  return <RelatoPage />;
+/** Link exclusivo de cada empresa-cliente. Slug inexistente ou organização
+ *  inativa vira 404 — ver `notFound()` em `RelatoPage`. */
+export default async function Page({ params }: { params: Promise<{ orgSlug: string }> }) {
+  const { orgSlug } = await params;
+  return <RelatoPage orgSlug={orgSlug} />;
 }

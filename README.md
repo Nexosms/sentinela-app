@@ -206,6 +206,31 @@ Aplicadas via MCP do Supabase, em ordem. `supabase migration list` no projeto
 | 028 | `role_nav_permissions` — permissões de navegação por cargo (aba "Time e permissões"), amplia `app.write_audit` com `nav_permission.changed` |
 | 029 | corrige `app.audit_org_settings()` — `v_campos \|\| 'campo'` (ambíguo entre array‖array e array‖elemento) quebrava toda gravação em `organizations` que mudasse qualquer um dos 8 campos observados; troca para `array_append` |
 | 030 | `get_report_catalog()` expõe `legal_name`/`cnpj` da organização, para a identificação institucional na 1ª etapa do relato |
+| 031 | `get_report_catalog()` para de devolver `units` — cada empresa-cliente agora é a própria organização (não mais uma unidade escolhida no relato) |
+
+### Cadastrar uma empresa-cliente nova
+
+Cada empresa-cliente é uma `organization` própria, com seu link exclusivo
+`/relato/<slug>`. Sem tela de cadastro ainda — os dois passos abaixo são
+feitos manualmente pela Nexo, via MCP do Supabase.
+
+1. **Criar a organização** (o `slug` vira o link):
+   ```sql
+   insert into organizations (slug, trade_name, legal_name, cnpj, timezone)
+   values ('acme', 'Acme Ltda.', 'Acme Indústria e Comércio Ltda.', '11222333000181', 'America/Sao_Paulo')
+   returning id;
+   ```
+2. **Convidar o primeiro contato da empresa** — usar `POST /api/admin/invites`
+   (ou a tela Configurações → "Time e permissões", logado como aquela
+   organização) com **papel `comite`** (só leitura de indicadores,
+   relatórios e auditoria — não mexe em denúncias/investigações). A Nexo
+   entra como `admin` da organização nova pelo mesmo convite, papel
+   diferente — o mesmo e-mail pode ser `admin` em várias organizações
+   (`src/app/api/admin/invites/route.ts` já trata isso: gera link de
+   recuperação em vez de convite novo quando a conta já existe).
+3. Se o cliente precisar ver mais ou menos do que o padrão do papel Comitê,
+   ajustar em Configurações → "Time e permissões" **daquela organização** —
+   é por organização, então não afeta outros clientes.
 
 ### Armadilhas registradas
 

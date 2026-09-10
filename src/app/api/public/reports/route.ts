@@ -154,27 +154,6 @@ export async function POST(request: Request): Promise<Response> {
     "baixo",
   );
 
-  // ── Unidade ───────────────────────────────────────────────────────────────
-  if (input.orgUnitId) {
-    const { data: unit, error: unitError } = await supabase
-      .from("org_units")
-      .select("id")
-      .eq("id", input.orgUnitId)
-      .eq("org_id", org.id)
-      .eq("is_active", true)
-      .maybeSingle();
-    if (unitError) {
-      console.error("[reports] unidade: %s", unitError.message);
-      return Response.json({ error: "server_error" }, { status: 500 });
-    }
-    if (!unit) {
-      return Response.json(
-        { error: "validation_failed", fieldErrors: { orgUnitId: "Unidade inválida." } },
-        { status: 400 },
-      );
-    }
-  }
-
   // ── Repetição da mesma idempotencyKey (ver comentário acima) ──────────────
   const existing = await findExisting(supabase, org.id, input.idempotencyKey);
   if (existing) return replay(supabase, org.id, existing, ipHash, uaHash);
@@ -215,8 +194,6 @@ export async function POST(request: Request): Promise<Response> {
       mode: input.mode,
       secret_hash: secretHash,
       relationship: input.relationship,
-      org_unit_id: input.orgUnitId,
-      unit_unknown: input.unitUnknown,
       period_text: input.periodText,
       location: input.location || null,
       accused: input.accused,

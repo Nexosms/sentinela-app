@@ -3,16 +3,12 @@
 import { useWizard } from "../wizardState";
 
 export default function Step4Revisao() {
-  const { state, units, categories } = useWizard();
+  const { state, categories } = useWizard();
 
   const selectedCategories = categories
     .filter(category => state.categoryIds.includes(category.id))
     .map(category => category.label)
     .join(" · ");
-
-  const unitLabel = state.unitUnknown
-    ? "Não sei informar"
-    : (units.find(unit => unit.id === state.orgUnitId)?.label ?? "");
 
   return (
     <>
@@ -30,10 +26,6 @@ export default function Step4Revisao() {
         <article>
           <small>CATEGORIAS</small>
           <strong>{selectedCategories || "Não classificadas"}</strong>
-        </article>
-        <article>
-          <small>UNIDADE</small>
-          <strong>{unitLabel || "Não informada"}</strong>
         </article>
         <article>
           <small>ANEXOS</small>

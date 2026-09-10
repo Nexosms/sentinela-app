@@ -7,15 +7,11 @@ import { RECURRENCES, RELATIONSHIPS } from "@/lib/report/schema";
 import { FieldError, FieldTitle } from "../fields";
 import { useWizard } from "../wizardState";
 
-/** Valor sentinela do <select> de unidade para "Não sei informar". */
-const UNIT_UNKNOWN = "__unknown__";
-
 export default function Step2OQueAconteceu() {
-  const { state, units, update, clearError, categoryGroups, needsSpecification, toggleCategory } =
+  const { state, update, clearError, categoryGroups, needsSpecification, toggleCategory } =
     useWizard();
   const { errors } = state;
 
-  const unitValue = state.unitUnknown ? UNIT_UNKNOWN : (state.orgUnitId ?? "");
   const [activeGroup, setActiveGroup] = useState(categoryGroups[0]?.key ?? "");
 
   return (
@@ -47,31 +43,6 @@ export default function Step2OQueAconteceu() {
             ))}
           </select>
           <FieldError message={errors.relationship} />
-        </label>
-        <label className={errors.orgUnitId ? "field-error" : ""}>
-          <FieldTitle
-            label="Unidade da ocorrência"
-            info="Selecione a unidade, filial ou estabelecimento relacionado à ocorrência."
-          />
-          <select
-            value={unitValue}
-            aria-invalid={!!errors.orgUnitId}
-            onChange={e => {
-              const value = e.target.value;
-              update("unitUnknown", value === UNIT_UNKNOWN);
-              update("orgUnitId", value === UNIT_UNKNOWN || value === "" ? null : value);
-              clearError("orgUnitId");
-            }}
-          >
-            <option value="">Selecione</option>
-            {units.map(unit => (
-              <option key={unit.id} value={unit.id}>
-                {unit.label}
-              </option>
-            ))}
-            <option value={UNIT_UNKNOWN}>Não sei informar</option>
-          </select>
-          <FieldError message={errors.orgUnitId} />
         </label>
         <label className={errors.periodText ? "field-error" : ""}>
           <FieldTitle

@@ -74,32 +74,25 @@ export const step1Schema = z
   );
 
 /** Etapa 2 — O que aconteceu */
-export const step2Schema = z
-  .object({
-    relationship: z.enum(RELATIONSHIPS.map(r => r.value) as [string, ...string[]], {
-      message: "Selecione sua relação com a organização.",
-    }),
-    orgUnitId: z.uuid().nullable(),
-    unitUnknown: z.boolean(),
-    periodText: trimmed(200).min(1, "Informe a data ou o período da ocorrência."),
-    location: trimmed(300).optional(),
-    accused: trimmed(300).min(1, 'Informe a pessoa, função ou escreva "não identificado".'),
-    witnesses: trimmed(300).optional(),
-    recurrence: z.enum(RECURRENCES.map(r => r.value) as [string, ...string[]]),
-    categoryIds: z.array(z.uuid()).min(1, "Selecione ao menos uma opção."),
-    categorySpecification: trimmed(500).optional(),
-    description: z
-      .string()
-      .trim()
-      .min(20, "Descreva o ocorrido com pelo menos 20 caracteres.")
-      .max(20000, "Descrição muito longa."),
-    retaliation: z.boolean(),
-    urgent: z.boolean(),
-  })
-  .refine(data => data.unitUnknown || data.orgUnitId !== null, {
-    message: "Selecione a unidade da ocorrência.",
-    path: ["orgUnitId"],
-  });
+export const step2Schema = z.object({
+  relationship: z.enum(RELATIONSHIPS.map(r => r.value) as [string, ...string[]], {
+    message: "Selecione sua relação com a organização.",
+  }),
+  periodText: trimmed(200).min(1, "Informe a data ou o período da ocorrência."),
+  location: trimmed(300).optional(),
+  accused: trimmed(300).min(1, 'Informe a pessoa, função ou escreva "não identificado".'),
+  witnesses: trimmed(300).optional(),
+  recurrence: z.enum(RECURRENCES.map(r => r.value) as [string, ...string[]]),
+  categoryIds: z.array(z.uuid()).min(1, "Selecione ao menos uma opção."),
+  categorySpecification: trimmed(500).optional(),
+  description: z
+    .string()
+    .trim()
+    .min(20, "Descreva o ocorrido com pelo menos 20 caracteres.")
+    .max(20000, "Descrição muito longa."),
+  retaliation: z.boolean(),
+  urgent: z.boolean(),
+});
 
 /** Etapa 3 — Evidências */
 export const step3Schema = z.object({
