@@ -211,26 +211,36 @@ Aplicadas via MCP do Supabase, em ordem. `supabase migration list` no projeto
 ### Cadastrar uma empresa-cliente nova
 
 Cada empresa-cliente é uma `organization` própria, com seu link exclusivo
-`/relato/<slug>`. Sem tela de cadastro ainda — os dois passos abaixo são
-feitos manualmente pela Nexo, via MCP do Supabase.
+`/relato/<slug>`. Quem é papel Administração na organização "Sentinela"
+(`NEXT_PUBLIC_DEFAULT_ORG_SLUG`) conta como equipe Nexo e vê, na sidebar do
+admin, o link **"⚑ Clientes"** (`/admin/clientes` —
+`src/lib/org/context.ts#isNexoAdmin`).
 
-1. **Criar a organização** (o `slug` vira o link):
-   ```sql
-   insert into organizations (slug, trade_name, legal_name, cnpj, timezone)
-   values ('acme', 'Acme Ltda.', 'Acme Indústria e Comércio Ltda.', '11222333000181', 'America/Sao_Paulo')
-   returning id;
-   ```
-2. **Convidar o primeiro contato da empresa** — usar `POST /api/admin/invites`
-   (ou a tela Configurações → "Time e permissões", logado como aquela
-   organização) com **papel `comite`** (só leitura de indicadores,
-   relatórios e auditoria — não mexe em denúncias/investigações). A Nexo
-   entra como `admin` da organização nova pelo mesmo convite, papel
-   diferente — o mesmo e-mail pode ser `admin` em várias organizações
-   (`src/app/api/admin/invites/route.ts` já trata isso: gera link de
-   recuperação em vez de convite novo quando a conta já existe).
-3. Se o cliente precisar ver mais ou menos do que o padrão do papel Comitê,
-   ajustar em Configurações → "Time e permissões" **daquela organização** —
-   é por organização, então não afeta outros clientes.
+A tela pede nome fantasia, razão social, CNPJ, o slug do link e o
+e-mail/nome do primeiro contato da empresa, e faz tudo num passo só
+(`criarEmpresaCliente`, em `src/app/admin/clientes/actions.ts`):
+
+1. Cria a `organization` (slug único, vira `/relato/<slug>`).
+2. Vincula quem está cadastrando (a pessoa da Nexo) como `admin` daquela
+   organização — a Nexo continua sendo quem administra de verdade cada
+   cliente.
+3. Convida o contato do cliente com **papel `comite`** (só leitura de
+   indicadores, relatórios e auditoria — não mexe em denúncias/
+   investigações), reaproveitando o mesmo provisionamento de conta do
+   convite de equipe (`src/lib/admin/authProvisioning.ts`) — a pessoa
+   recebe um e-mail para definir a própria senha; a Nexo nunca vê senha de
+   cliente.
+
+Se o cliente precisar ver mais ou menos do que o padrão do papel Comitê,
+ajustar em Configurações → "Time e permissões" **daquela organização** — é
+por organização, então não afeta outros clientes.
+
+**Trocar de organização**: como a equipe Nexo fica `admin` em várias
+organizações (a própria Sentinela + cada cliente), a caixa com o nome da
+organização no topo da sidebar vira um seletor (só aparece quando há mais
+de uma) — `src/lib/org/actions.ts#trocarOrganizacaoAtiva` grava qual
+organização `getStaffContext()` deve resolver, num cookie, depois de
+confirmar sob RLS que a pessoa realmente tem vínculo ativo ali.
 
 ### Armadilhas registradas
 

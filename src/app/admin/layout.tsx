@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 import type { ReactNode } from "react";
 import AdminSidebar from "@/components/admin/AdminSidebar";
 import { createClient } from "@/lib/supabase/server";
-import { getStaffContext, getRoleNavOverrides } from "@/lib/org/context";
+import { getStaffContext, getRoleNavOverrides, listMyOrganizations, isNexoAdmin } from "@/lib/org/context";
 
 // Depende da identidade por requisição.
 export const dynamic = "force-dynamic";
@@ -22,17 +22,24 @@ export default async function AdminLayout({ children }: { children: ReactNode })
     .select("id", { count: "exact", head: true })
     .eq("status", "em_triagem");
 
-  const navOverrides = await getRoleNavOverrides(staff.orgId);
+  const [navOverrides, myOrgs, nexoAdmin] = await Promise.all([
+    getRoleNavOverrides(staff.orgId),
+    listMyOrganizations(),
+    isNexoAdmin(),
+  ]);
 
   return (
     <main className="admin-shell">
       <AdminSidebar
+        orgId={staff.orgId}
         orgName={staff.orgName}
         fullName={staff.fullName}
         email={staff.email}
         role={staff.role}
         pendingCount={count ?? 0}
         navOverrides={navOverrides}
+        myOrgs={myOrgs}
+        nexoAdmin={nexoAdmin}
       />
       <section className="admin-main">{children}</section>
     </main>

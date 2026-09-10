@@ -27,6 +27,11 @@ const eslintConfig = defineConfig([
       // provada pela RLS (open_evidence) e a trilha já foi gravada antes de a
       // chave entrar em cena. Ver o comentário no topo da rota.
       "src/app/api/admin/evidence/**",
+      // Cadastro de empresa-cliente: criar organização e o primeiro
+      // `org_members` dela é bootstrapping — não existe ainda org_id nem
+      // admin para a RLS autorizar. Ver o comentário no topo de
+      // admin/clientes/actions.ts.
+      "src/app/admin/clientes/**",
     ],
     rules: {
       "no-restricted-imports": [

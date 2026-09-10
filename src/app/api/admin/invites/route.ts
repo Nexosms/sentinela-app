@@ -4,7 +4,7 @@ import { createAdminClient } from "@/lib/supabase/admin";
 import { createClient } from "@/lib/supabase/server";
 import { getStaffContext } from "@/lib/org/context";
 import { consumeStrict, tooManyRequests } from "@/lib/ratelimit";
-import { publicEnv } from "@/lib/env";
+import { provisionAuthUser } from "@/lib/admin/authProvisioning";
 
 /**
  * Convite de equipe.
@@ -100,79 +100,13 @@ export async function POST(request: Request) {
     return bad(503, "O limitador de convites está indisponível. Tente novamente em alguns minutos.");
   }
 
-  // O destino do link. Precisa estar na lista de Redirect URLs do projeto
-  // Supabase (Authentication → URL Configuration) — ver README.
-  const redirectTo = `${publicEnv.siteUrl}/convite`;
-
-  let userId: string | null = null;
-  let inviteUrl: string | null = null;
-  let emailSent = false;
-  let jaTinhaConta = false;
-
-  const convite = await admin.auth.admin.inviteUserByEmail(email, {
-    redirectTo,
-    data: { full_name: fullName },
-  });
-
-  if (!convite.error && convite.data.user) {
-    userId = convite.data.user.id;
-    emailSent = true;
-  } else {
-    const message = convite.error?.message ?? "erro desconhecido";
-    const code = convite.error?.code ?? "";
-    const jaExiste =
-      code === "email_exists" ||
-      /already been registered|already registered|already exists/i.test(message);
-
-    if (jaExiste) {
-      jaTinhaConta = true;
-    } else {
-      // Falha de envio (SMTP ausente, limite do remetente compartilhado,
-      // domínio recusado). O convite não pode morrer aqui: `generateLink` cria
-      // a mesma conta pela mesma Admin API e devolve o link SEM tentar enviar.
-      console.error("[convite] inviteUserByEmail falhou (%s): %s", code, message);
-      const gerado = await admin.auth.admin.generateLink({
-        type: "invite",
-        email,
-        options: { redirectTo, data: { full_name: fullName } },
-      });
-      if (gerado.error || !gerado.data.user) {
-        const detalhe = gerado.error?.message ?? "sem detalhe";
-        if (/already been registered|already registered|already exists/i.test(detalhe)) {
-          jaTinhaConta = true;
-        } else {
-          console.error("[convite] generateLink(invite) falhou: %s", detalhe);
-          return bad(502, `Não foi possível criar o convite no provedor de autenticação: ${detalhe}`);
-        }
-      } else {
-        userId = gerado.data.user.id;
-        inviteUrl = gerado.data.properties.action_link;
-      }
-    }
-  }
-
-  // Conta já existente (a pessoa foi convidada antes, ou tem acesso a outra
-  // organização): não se cria nada em auth, só se gera o link de acesso e se
-  // cria o vínculo. `recovery` é o tipo certo porque o login deste painel é por
-  // senha — um magic link deixaria a pessoa sem senha para o segundo acesso.
-  if (jaTinhaConta || (userId && !inviteUrl)) {
-    const recuperacao = await admin.auth.admin.generateLink({
-      type: "recovery",
-      email,
-      options: { redirectTo },
-    });
-    if (recuperacao.error || !recuperacao.data.user) {
-      const detalhe = recuperacao.error?.message ?? "sem detalhe";
-      console.error("[convite] generateLink(recovery) falhou: %s", detalhe);
-      if (!userId) return bad(502, `Não foi possível gerar o link de acesso: ${detalhe}`);
-    } else {
-      userId = userId ?? recuperacao.data.user.id;
-      inviteUrl = inviteUrl ?? recuperacao.data.properties.action_link;
-    }
-  }
-
-  if (!userId) {
-    return bad(502, "O provedor de autenticação não devolveu a conta convidada.");
+  let userId: string;
+  let inviteUrl: string | null;
+  let emailSent: boolean;
+  try {
+    ({ userId, inviteUrl, emailSent } = await provisionAuthUser(admin, email, fullName));
+  } catch (error) {
+    return bad(502, error instanceof Error ? error.message : "Falha ao provisionar a conta.");
   }
 
   // 4. O VÍNCULO VAI SOB RLS, com o cliente de sessão. A policy
