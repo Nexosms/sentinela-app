@@ -190,7 +190,8 @@ export default async function InboxShell({
               </div>
               <strong>{primaryCategory(item.report_categories)}</strong>
               <small>
-                {item.org_units?.name ?? "Unidade não informada"} · {relativeAge(item.created_at)}
+                {item.org_units?.name ? `${item.org_units.name} · ` : ""}
+                {relativeAge(item.created_at)}
               </small>
               <div className="case-flags">
                 {flagsOf(item).map(flag => (

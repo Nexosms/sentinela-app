@@ -4,7 +4,7 @@ import { useState } from "react";
 
 import { RECURRENCES, RELATIONSHIPS } from "@/lib/report/schema";
 
-import { FieldError, FieldTitle } from "../fields";
+import { FieldError, FieldTitle, InfoHint } from "../fields";
 import { useWizard } from "../wizardState";
 
 export default function Step2OQueAconteceu() {
@@ -199,12 +199,10 @@ export default function Step2OQueAconteceu() {
             onChange={e => update("retaliation", e.target.checked)}
           />{" "}
           Existe ameaça ou possível retaliação{" "}
-          <span
-            className="info-hint"
-            title="Marque se houve ameaça, prejuízo ou tratamento desfavorável relacionado ao relato."
-          >
-            i
-          </span>
+          <InfoHint
+            label="Existe ameaça ou possível retaliação"
+            info="Marque se houve ameaça, prejuízo ou tratamento desfavorável relacionado ao relato."
+          />
         </label>
         <label>
           <input
@@ -213,12 +211,10 @@ export default function Step2OQueAconteceu() {
             onChange={e => update("urgent", e.target.checked)}
           />{" "}
           Solicito medida urgente{" "}
-          <span
-            className="info-hint"
-            title="Marque quando entender que uma medida imediata pode ser necessária para proteção ou preservação de evidências."
-          >
-            i
-          </span>
+          <InfoHint
+            label="Solicito medida urgente"
+            info="Marque quando entender que uma medida imediata pode ser necessária para proteção ou preservação de evidências."
+          />
         </label>
       </div>
     </>

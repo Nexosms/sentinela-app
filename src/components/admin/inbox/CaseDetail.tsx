@@ -116,7 +116,14 @@ export default async function CaseDetail({ id, filters }: { id: string; filters:
     report.report_categories?.find(row => row.is_primary)?.categories?.label_pt ??
     categories[0] ??
     "Relato sem categoria";
-  const unit = report.org_units?.name ?? (report.unit_unknown ? "Unidade desconhecida" : "Sem unidade");
+  // Cada empresa-cliente é a própria organização (não mais "unidades" dentro
+  // de uma organização única) — `staff.orgName` já é a empresa deste relato,
+  // sem precisar de outra consulta. Unidade só aparece quando existir de
+  // verdade (organizações que ainda usam `org_units` internamente, ou
+  // relatos antigos, de antes desta mudança).
+  const empresa = staff.orgName;
+  const unidade = report.org_units?.name;
+  const identificacao = unidade ? `${empresa} · ${unidade}` : empresa;
   const overdue = isOverdue(report.due_at);
 
   return (
@@ -126,7 +133,7 @@ export default async function CaseDetail({ id, filters }: { id: string; filters:
           <code>{report.protocol}</code>
           <h2>{primary}</h2>
           <span>
-            {unit} · recebido {relativeAge(report.created_at)}
+            {identificacao} · recebido {relativeAge(report.created_at)}
           </span>
         </div>
         <span className={riskClass(report.risk)}>{RISK_LABEL[report.risk]}</span>
@@ -206,7 +213,7 @@ export default async function CaseDetail({ id, filters }: { id: string; filters:
                 label="CATEGORIAS"
                 value={categories.length > 0 ? categories.join(" · ") : "Sem categoria"}
               />
-              <Field label="UNIDADE" value={unit} />
+              <Field label="EMPRESA" value={identificacao} />
               {report.city ? <Field label="CIDADE" value={report.city} /> : null}
               {report.relationship ? (
                 <Field
