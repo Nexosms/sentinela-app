@@ -1,6 +1,8 @@
 import type { Metadata, Viewport } from "next";
 import { Geist, Geist_Mono, Manrope } from "next/font/google";
 import "./globals.css";
+import AuthErrorRedirect from "@/components/AuthErrorRedirect";
+import { publicEnv } from "@/lib/env";
 
 const geistSans = Geist({ variable: "--font-geist-sans", subsets: ["latin"] });
 const geistMono = Geist_Mono({ variable: "--font-geist-mono", subsets: ["latin"] });
@@ -10,10 +12,8 @@ const manrope = Manrope({
   weight: ["500", "700", "800"],
 });
 
-const siteUrl = process.env.NEXT_PUBLIC_SITE_URL ?? "http://localhost:3000";
-
 export const metadata: Metadata = {
-  metadataBase: new URL(siteUrl),
+  metadataBase: new URL(publicEnv.siteUrl),
   title: {
     default: "Sentinela | Canal de Denúncias",
     template: "%s | Sentinela",
@@ -46,6 +46,7 @@ export default function RootLayout({ children }: Readonly<{ children: React.Reac
   return (
     <html lang="pt-BR">
       <body className={`${geistSans.variable} ${geistMono.variable} ${manrope.variable}`}>
+        <AuthErrorRedirect />
         {children}
       </body>
     </html>

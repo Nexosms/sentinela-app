@@ -207,6 +207,7 @@ Aplicadas via MCP do Supabase, em ordem. `supabase migration list` no projeto
 | 029 | corrige `app.audit_org_settings()` — `v_campos \|\| 'campo'` (ambíguo entre array‖array e array‖elemento) quebrava toda gravação em `organizations` que mudasse qualquer um dos 8 campos observados; troca para `array_append` |
 | 030 | `get_report_catalog()` expõe `legal_name`/`cnpj` da organização, para a identificação institucional na 1ª etapa do relato |
 | 031 | `get_report_catalog()` para de devolver `units` — cada empresa-cliente agora é a própria organização (não mais uma unidade escolhida no relato) |
+| 032 | `app.audit_action_measure()` passa a avisar o responsável assim que uma medida é criada/reatribuída (`measure.assigned`, novo valor no CHECK de `notifications.kind`); `app.audit_investigation()` passa a avisar também o líder (`lead_id`), além do aviso em bloco para `admin` |
 
 ### Cadastrar uma empresa-cliente nova
 
@@ -303,6 +304,16 @@ confirmar sob RLS que a pessoa realmente tem vínculo ativo ali.
   e os demais tokens com `''`. NULL quebra o login com
   `converting NULL to string is unsupported`. Na aplicação, use sempre a Admin
   API (`inviteUserByEmail`).
+- **Sem `NEXT_PUBLIC_SITE_URL` em produção, todo link de convite/recuperação
+  aponta para `localhost:3000`.** `src/lib/admin/authProvisioning.ts` monta o
+  `redirectTo` a partir de `publicEnv.siteUrl`
+  ([src/lib/env.ts](src/lib/env.ts)) — sem essa variável configurada na
+  Vercel, o e-mail que a pessoa convidada recebe leva a um endereço que só
+  existe na máquina de quem roda `npm run dev`. Há um fallback para o
+  domínio da própria Vercel (`VERCEL_PROJECT_PRODUCTION_URL`/`VERCEL_URL`),
+  mas configurar a variável com o domínio real continua sendo o certo — ver
+  "Pendências no painel do Supabase" abaixo para o segundo passo
+  (Redirect URLs), que é independente e igualmente necessário.
 
 ## Pendências no painel do Supabase (ação manual)
 
@@ -313,6 +324,11 @@ Não dá para configurar por migração; precisam ser feitas no dashboard antes 
 2. **Authentication → Policies → habilitar "Leaked password protection"** (checagem
    contra o HaveIBeenPwned). Apontado pelo advisor de segurança.
 3. **Remover o usuário de teste** `teste.admin@sentinela.local` antes da entrega.
+4. **Authentication → URL Configuration**: "Site URL" e "Redirect URLs" precisam
+   incluir o domínio de produção real (ex.: `https://app.seudominio.com.br/**`).
+   Um `redirectTo` fora dessa lista é descartado silenciosamente pelo GoTrue —
+   configurar `NEXT_PUBLIC_SITE_URL` na Vercel (ver "Observações operacionais"
+   acima) não resolve sozinho se este passo não for feito também.
 
 ### Avisos de advisor que são intencionais
 

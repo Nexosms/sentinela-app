@@ -2,7 +2,12 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import AdminTopbar from "@/components/admin/AdminTopbar";
 import { formatDateTime } from "@/lib/admin/labels";
-import { countUnreadNotifications, listNotifications } from "@/lib/admin/notifications";
+import {
+  countUnreadNotifications,
+  listNotifications,
+  loadMeasurePlanIds,
+  notificationHref,
+} from "@/lib/admin/notifications";
 import { marcarComoLidas } from "./actions";
 
 export const metadata: Metadata = { title: "Notificações" };
@@ -15,6 +20,7 @@ export default async function NotificacoesPage() {
     listNotifications(),
     countUnreadNotifications(),
   ]);
+  const measurePlanIds = await loadMeasurePlanIds(notificacoes);
 
   return (
     <>
@@ -58,6 +64,7 @@ export default async function NotificacoesPage() {
             </div>
 
             {notificacoes.map(item => {
+              const href = notificationHref(item, measurePlanIds);
               const corpo = (
                 <>
                   <span className={item.read_at ? undefined : "status-pill"}>
@@ -70,14 +77,14 @@ export default async function NotificacoesPage() {
                       {formatDateTime(item.created_at)}
                     </small>
                   </div>
-                  <b>{item.report_id ? "abrir →" : ""}</b>
+                  <b>{href ? "abrir →" : ""}</b>
                 </>
               );
 
-              // Só vira link quando há relato para abrir; caso contrário
+              // Só vira link quando há um destino resolvido; caso contrário
               // continua um bloco de leitura, sem destino falso.
-              return item.report_id ? (
-                <Link className="priority-case" key={item.id} href={`/admin/denuncias/${item.report_id}`}>
+              return href ? (
+                <Link className="priority-case" key={item.id} href={href}>
                   {corpo}
                 </Link>
               ) : (
