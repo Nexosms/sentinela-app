@@ -172,6 +172,53 @@ export function formatCnpj(digits: string | null): string {
   return `${digits.slice(0, 2)}.${digits.slice(2, 5)}.${digits.slice(5, 8)}/${digits.slice(8, 12)}-${digits.slice(12)}`;
 }
 
+// ── Documento da empresa-cliente: CPF, CNPJ ou CAEPF ────────────────────────
+
+/** Dígitos verificadores do CPF (módulo 11, pesos decrescentes a partir de 10/11). */
+export function isValidCpf(value: string): boolean {
+  const digits = onlyDigits(value);
+  if (digits.length !== 11) return false;
+  if (/^(\d)\1{10}$/.test(digits)) return false;
+
+  const check = (length: number): number => {
+    let sum = 0;
+    for (let i = 0; i < length; i += 1) {
+      sum += Number(digits[i]) * (length + 1 - i);
+    }
+    const rest = (sum * 10) % 11;
+    return rest === 10 ? 0 : rest;
+  };
+
+  return check(9) === Number(digits[9]) && check(10) === Number(digits[10]);
+}
+
+/**
+ * Aceita o documento de uma empresa-cliente: CPF (11 dígitos, com dígito
+ * verificador de verdade) ou CNPJ/CAEPF (14 dígitos). O CAEPF (Cadastro de
+ * Atividade Econômica da Pessoa Física, usado por autônomos/informais) não
+ * tem um algoritmo de dígito verificador que eu consiga confirmar com
+ * certeza — por isso, para 14 dígitos, só se rejeita o caso obviamente
+ * inválido (um único dígito repetido). Isso é deliberadamente mais
+ * permissivo que `isValidCnpj` (que continua estrita, usada só para o CNPJ
+ * de uma unidade interna).
+ */
+export function isValidDocumento(value: string): boolean {
+  const digits = onlyDigits(value);
+  if (digits.length === 11) return isValidCpf(digits);
+  if (digits.length === 14) return !/^(\d)\1{13}$/.test(digits);
+  return false;
+}
+
+/** Só para exibir — 11 dígitos como CPF, 14 como CNPJ/CAEPF, o resto cru. */
+export function formatDocumento(digits: string | null): string {
+  if (!digits) return "—";
+  if (digits.length === 11) {
+    return `${digits.slice(0, 3)}.${digits.slice(3, 6)}.${digits.slice(6, 9)}-${digits.slice(9)}`;
+  }
+  if (digits.length === 14) return formatCnpj(digits);
+  return digits;
+}
+
 // ── Fuso ─────────────────────────────────────────────────────────────────────
 
 /**

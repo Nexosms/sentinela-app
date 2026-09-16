@@ -3,6 +3,8 @@ import { notFound } from "next/navigation";
 
 import AdminTopbar from "@/components/admin/AdminTopbar";
 import EditarClienteForm from "@/components/admin/clientes/EditarClienteForm";
+import ConvidarContatoForm from "@/components/admin/clientes/ConvidarContatoForm";
+import { MEMBER_STATUS_LABEL } from "@/lib/admin/configuracoes";
 import { isNexoAdmin } from "@/lib/org/context";
 import { trocarOrganizacaoAtiva } from "@/lib/org/actions";
 import { createClient } from "@/lib/supabase/server";
@@ -38,11 +40,19 @@ export default async function ClienteDetailPage({
   const supabase = await createClient();
   const { data: org } = await supabase
     .from("organizations")
-    .select("id, slug, trade_name, legal_name, cnpj")
+    .select("id, slug, trade_name, legal_name, cnpj, address")
     .eq("id", orgId)
     .maybeSingle();
 
   if (!org) notFound();
+
+  // Contatos já cadastrados (papel Comitê) — decide se mostra "convidar" ou "convidar mais um".
+  const { data: contatos } = await supabase
+    .from("org_members")
+    .select("id, status, profiles!org_members_user_id_fkey(full_name, email)")
+    .eq("org_id", orgId)
+    .eq("role", "comite")
+    .order("invited_at", { ascending: true });
 
   return (
     <>
@@ -64,14 +74,41 @@ export default async function ClienteDetailPage({
           <span>Dados cadastrais</span>
         </div>
         <EditarClienteForm
-          org={{ id: org.id, tradeName: org.trade_name, legalName: org.legal_name, cnpj: org.cnpj }}
+          org={{
+            id: org.id,
+            tradeName: org.trade_name,
+            legalName: org.legal_name,
+            cnpj: org.cnpj,
+            address: org.address,
+          }}
         />
+
+        <div className="list-head">
+          <span>Contato do cliente</span>
+        </div>
+        {contatos && contatos.length > 0 ? (
+          <div className="file-list">
+            {contatos.map(contato => (
+              <div key={contato.id}>
+                <b>
+                  {contato.profiles?.full_name ?? "Convidado (perfil visível só após o primeiro acesso)"}
+                  <small>
+                    {contato.profiles?.email ?? "—"} · {MEMBER_STATUS_LABEL[contato.status]}
+                  </small>
+                </b>
+              </div>
+            ))}
+          </div>
+        ) : (
+          <p className="lead">Nenhum contato cadastrado ainda.</p>
+        )}
+        <ConvidarContatoForm orgId={org.id} />
 
         <div className="list-head">
           <span>Equipe e permissões</span>
         </div>
         <p className="lead">
-          Para convidar pessoas ou ajustar o que cada papel enxerga nesta organização, entre nela e
+          Para ajustar papel, situação ou o que cada cargo enxerga nesta organização, entre nela e
           use Configurações → Time e permissões.
         </p>
         <form action={trocarOrganizacaoAtiva}>

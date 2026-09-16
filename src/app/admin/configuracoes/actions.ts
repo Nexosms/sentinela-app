@@ -12,6 +12,7 @@ import {
   UFS,
   UUID,
   isValidCnpj,
+  isValidDocumento,
   onlyDigits,
   slugifyCode,
 } from "@/lib/admin/configuracoes";
@@ -163,13 +164,12 @@ export async function salvarOrganizacao(
   });
   if (!parsed.success) return { error: firstIssue(parsed.error), enviado: eco };
 
-  // O banco guarda 14 dígitos (`organizations_cnpj_check`), mas quem digita
-  // cola com pontuação. Limpar e conferir os DV aqui evita o 23514 cru.
+  // O banco aceita CPF (11 dígitos) ou CNPJ/CAEPF (14) — `organizations_cnpj_check`.
+  // Quem digita cola com pontuação; limpar e conferir aqui evita o 23514 cru.
   const digits = onlyDigits(parsed.data.cnpj);
-  if (digits !== "" && !isValidCnpj(digits)) {
+  if (digits !== "" && !isValidDocumento(digits)) {
     return {
-      error:
-        "CNPJ inválido: os dígitos verificadores não conferem. Confira o número no cartão CNPJ.",
+      error: "Documento inválido. Confira o CPF, CNPJ ou CAEPF digitado.",
       enviado: eco,
     };
   }

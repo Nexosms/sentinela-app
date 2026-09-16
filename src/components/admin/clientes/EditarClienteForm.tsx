@@ -3,14 +3,20 @@
 import { useActionState } from "react";
 
 import { editarEmpresaCliente, type EditState } from "@/app/admin/clientes/actions";
-import { formatCnpj } from "@/lib/admin/configuracoes";
+import { formatDocumento } from "@/lib/admin/configuracoes";
 
 const EMPTY: EditState = {};
 
 export default function EditarClienteForm({
   org,
 }: {
-  org: { id: string; tradeName: string; legalName: string; cnpj: string | null };
+  org: {
+    id: string;
+    tradeName: string;
+    legalName: string;
+    cnpj: string | null;
+    address: string | null;
+  };
 }) {
   const [state, action, pending] = useActionState(editarEmpresaCliente, EMPTY);
 
@@ -27,10 +33,18 @@ export default function EditarClienteForm({
           <input name="legalName" required maxLength={160} defaultValue={org.legalName} />
         </label>
         <label>
-          CNPJ
-          <input name="cnpj" maxLength={18} defaultValue={org.cnpj ? formatCnpj(org.cnpj) : ""} />
+          CPF, CNPJ ou CAEPF
+          <input
+            name="cnpj"
+            maxLength={18}
+            defaultValue={org.cnpj ? formatDocumento(org.cnpj) : ""}
+          />
         </label>
       </div>
+      <label className="wide-field">
+        Endereço
+        <textarea name="address" rows={2} maxLength={300} defaultValue={org.address ?? ""} />
+      </label>
       {state.error ? <span className="field-error-message">{state.error}</span> : null}
       {state.ok ? (
         <div className="care-note">

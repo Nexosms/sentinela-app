@@ -27,7 +27,7 @@ import {
   ROLE_ORDER,
   TIMEZONES,
   UFS,
-  formatCnpj,
+  formatDocumento,
   type AppRole,
   type CategoryGroup,
   type MemberStatus,
@@ -129,12 +129,12 @@ export function OrganizacaoForm({ org }: { org: Organizacao }) {
 
       <div className="field-grid two">
         <label>
-          CNPJ
+          CPF, CNPJ ou CAEPF
           <input
             name="cnpj"
             inputMode="numeric"
             defaultValue={eco.cnpj ?? (org.cnpj ?? "")}
-            placeholder="00.000.000/0000-00"
+            placeholder="Só números"
             aria-describedby="cnpj-hint"
           />
         </label>
@@ -196,8 +196,8 @@ export function OrganizacaoForm({ org }: { org: Organizacao }) {
       </div>
 
       <p id="cnpj-hint" className="lead">
-        CNPJ atual: <strong>{formatCnpj(org.cnpj)}</strong>. Pode digitar com pontuação — só os 14
-        dígitos são guardados, e os dígitos verificadores são conferidos antes de salvar.
+        Documento atual: <strong>{formatDocumento(org.cnpj)}</strong>. Aceita CPF, CNPJ ou CAEPF —
+        pode digitar com pontuação, só os dígitos são guardados.
       </p>
 
       {/* Explicação embutida, não rótulo. Quem mexe neste campo precisa saber

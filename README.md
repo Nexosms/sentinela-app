@@ -209,6 +209,7 @@ Aplicadas via MCP do Supabase, em ordem. `supabase migration list` no projeto
 | 031 | `get_report_catalog()` para de devolver `units` — cada empresa-cliente agora é a própria organização (não mais uma unidade escolhida no relato) |
 | 032 | `app.audit_action_measure()` passa a avisar o responsável assim que uma medida é criada/reatribuída (`measure.assigned`, novo valor no CHECK de `notifications.kind`); `app.audit_investigation()` passa a avisar também o líder (`lead_id`), além do aviso em bloco para `admin` |
 | 033 | `t_org_member_audit` passa a disparar também em DELETE — remover alguém do time (`removerMembro`) grava `member.removed`, novo valor na lista branca de `app.write_audit` |
+| 034 | `organizations_cnpj_check` passa a aceitar CPF (11 dígitos) além de CNPJ/CAEPF (14) no documento da empresa-cliente; nova coluna `organizations.address` (texto livre) |
 
 ### Cadastrar uma empresa-cliente nova
 

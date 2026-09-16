@@ -1263,6 +1263,7 @@ export type Database = {
       }
       organizations: {
         Row: {
+          address: string | null
           cnpj: string | null
           created_at: string
           id: string
@@ -1279,6 +1280,7 @@ export type Database = {
           updated_at: string
         }
         Insert: {
+          address?: string | null
           cnpj?: string | null
           created_at?: string
           id?: string
@@ -1295,6 +1297,7 @@ export type Database = {
           updated_at?: string
         }
         Update: {
+          address?: string | null
           cnpj?: string | null
           created_at?: string
           id?: string

@@ -5,7 +5,7 @@ import { z } from "zod";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { createClient } from "@/lib/supabase/server";
 import { getStaffContext, isNexoAdmin } from "@/lib/org/context";
-import { onlyDigits, isValidCnpj } from "@/lib/admin/configuracoes";
+import { onlyDigits, isValidDocumento } from "@/lib/admin/configuracoes";
 import { provisionAuthUser } from "@/lib/admin/authProvisioning";
 import { relatoUrl } from "@/lib/admin/clientes";
 
@@ -53,9 +53,15 @@ const schema = z.object({
     .trim()
     .optional()
     .transform(value => (value ? onlyDigits(value) : ""))
-    .refine(value => value === "" || isValidCnpj(value), "CNPJ inválido."),
-  contactEmail: z.email("Informe um e-mail válido.").max(320).transform(v => v.trim().toLowerCase()),
-  contactName: z.string().trim().min(3, "Informe o nome do contato.").max(120),
+    .refine(value => value === "" || isValidDocumento(value), "Documento inválido."),
+  address: z.string().trim().max(300).optional(),
+  contactEmail: z
+    .string()
+    .trim()
+    .optional()
+    .transform(value => (value ? value.toLowerCase() : ""))
+    .refine(value => value === "" || z.email().safeParse(value).success, "Informe um e-mail válido."),
+  contactName: z.string().trim().max(120).optional(),
 });
 
 function text(formData: FormData, name: string): string {
@@ -73,13 +79,19 @@ export async function criarEmpresaCliente(_prev: ActionState, formData: FormData
     legalName: text(formData, "legalName"),
     slug: text(formData, "slug"),
     cnpj: text(formData, "cnpj"),
+    address: text(formData, "address"),
     contactEmail: text(formData, "contactEmail"),
     contactName: text(formData, "contactName"),
   });
   if (!parsed.success) {
     return { error: parsed.error.issues[0]?.message ?? "Dados inválidos." };
   }
-  const { tradeName, legalName, slug, cnpj, contactEmail, contactName } = parsed.data;
+  const { tradeName, legalName, slug, cnpj, address, contactEmail, contactName } = parsed.data;
+
+  // Contato é opcional no cadastro — mas se um dos dois vier, os dois precisam vir.
+  if (Boolean(contactEmail) !== Boolean(contactName)) {
+    return { error: "Informe o nome e o e-mail do contato, ou deixe os dois em branco." };
+  }
 
   const staff = await getStaffContext();
   const admin = createAdminClient();
@@ -91,13 +103,14 @@ export async function criarEmpresaCliente(_prev: ActionState, formData: FormData
       trade_name: tradeName,
       legal_name: legalName,
       cnpj: cnpj || null,
+      address: address || null,
     })
     .select("id, slug")
     .maybeSingle();
 
   if (orgError) {
     if (orgError.code === "23505") {
-      const campo = orgError.message.includes("cnpj") ? "CNPJ" : "slug";
+      const campo = orgError.message.includes("cnpj") ? "documento" : "slug";
       return { error: `Já existe uma organização com este ${campo}.` };
     }
     console.error("[clientes] criar organização: %s", orgError.message);
@@ -120,10 +133,17 @@ export async function criarEmpresaCliente(_prev: ActionState, formData: FormData
     };
   }
 
+  // Sem contato informado: organização criada, convite fica para depois
+  // (tela da empresa em /admin/clientes/[orgId]).
+  if (!contactEmail) {
+    return { ok: true, novaOrgId: org.id, novaOrgSlug: org.slug, relatoUrl: relatoUrl(org.slug) };
+  }
+
   let inviteUrl: string | null = null;
   let emailSent = false;
   try {
-    const provisioned = await provisionAuthUser(admin, contactEmail, contactName);
+    // `contactName` já foi garantido não-vazio pelo par com `contactEmail` acima.
+    const provisioned = await provisionAuthUser(admin, contactEmail, contactName ?? "");
     inviteUrl = provisioned.inviteUrl;
     emailSent = provisioned.emailSent;
 
@@ -138,14 +158,14 @@ export async function criarEmpresaCliente(_prev: ActionState, formData: FormData
       console.error("[clientes] vínculo do contato: %s", clienteError.message);
       return {
         error:
-          "A organização foi criada, mas o vínculo do contato do cliente falhou. Convide-o depois, dentro da organização nova, em Configurações → Time e permissões.",
+          "A organização foi criada, mas o vínculo do contato do cliente falhou. Convide-o depois, na tela da empresa.",
       };
     }
   } catch (error) {
     console.error("[clientes] convite do contato: %s", error instanceof Error ? error.message : error);
     return {
       error:
-        "A organização foi criada, mas não foi possível convidar o contato agora. Convide-o depois, dentro da organização nova, em Configurações → Time e permissões.",
+        "A organização foi criada, mas não foi possível convidar o contato agora. Convide-o depois, na tela da empresa.",
     };
   }
 
@@ -157,6 +177,67 @@ export async function criarEmpresaCliente(_prev: ActionState, formData: FormData
     novaOrgSlug: org.slug,
     relatoUrl: relatoUrl(org.slug),
   };
+}
+
+const convidarContatoSchema = z.object({
+  orgId: z.uuid(),
+  contactName: z.string().trim().min(3, "Informe o nome do contato.").max(120),
+  contactEmail: z.email("Informe um e-mail válido.").max(320).transform(v => v.trim().toLowerCase()),
+});
+
+/**
+ * Convida o contato de uma empresa-cliente já existente — para quando o
+ * cadastro foi feito sem contato. Diferente de `criarEmpresaCliente`, o
+ * vínculo em `org_members` vai pelo cliente de sessão sob RLS: a Nexo já
+ * tem vínculo `admin` NESTA organização (criado junto com ela), então
+ * `members_insert` já autoriza, independente de qual organização está
+ * "ativa" no cookie agora — mesmo raciocínio de `editarEmpresaCliente`.
+ * Só a Admin API de auth (`provisionAuthUser`) precisa de service role.
+ */
+export async function convidarContatoCliente(_prev: ActionState, formData: FormData): Promise<ActionState> {
+  if (!(await isNexoAdmin())) {
+    return { error: "Só a equipe Nexo pode convidar o contato de uma empresa-cliente." };
+  }
+
+  const parsed = convidarContatoSchema.safeParse({
+    orgId: text(formData, "orgId"),
+    contactName: text(formData, "contactName"),
+    contactEmail: text(formData, "contactEmail"),
+  });
+  if (!parsed.success) return { error: parsed.error.issues[0]?.message ?? "Dados inválidos." };
+  const { orgId, contactName, contactEmail } = parsed.data;
+
+  const staff = await getStaffContext();
+  const admin = createAdminClient();
+  const supabase = await createClient();
+
+  let inviteUrl: string | null = null;
+  let emailSent = false;
+  try {
+    const provisioned = await provisionAuthUser(admin, contactEmail, contactName);
+    inviteUrl = provisioned.inviteUrl;
+    emailSent = provisioned.emailSent;
+
+    const { error } = await supabase.from("org_members").insert({
+      org_id: orgId,
+      user_id: provisioned.userId,
+      role: "comite",
+      status: "invited",
+      invited_by: staff.userId,
+    });
+    if (error) {
+      if (error.code === "23505") {
+        return { error: "Essa pessoa já tem vínculo com esta organização.", inviteUrl, emailSent };
+      }
+      console.error("[clientes] vínculo do contato (depois): %s", error.message);
+      return { error: "Não foi possível vincular o contato a esta organização." };
+    }
+  } catch (error) {
+    console.error("[clientes] convite do contato (depois): %s", error instanceof Error ? error.message : error);
+    return { error: "Não foi possível convidar o contato agora. Tente de novo." };
+  }
+
+  return { ok: true, inviteUrl, emailSent };
 }
 
 /**
@@ -176,7 +257,8 @@ const editSchema = z.object({
     .trim()
     .optional()
     .transform(value => (value ? onlyDigits(value) : ""))
-    .refine(value => value === "" || isValidCnpj(value), "CNPJ inválido."),
+    .refine(value => value === "" || isValidDocumento(value), "Documento inválido."),
+  address: z.string().trim().max(300).optional(),
 });
 
 export async function editarEmpresaCliente(_prev: EditState, formData: FormData): Promise<EditState> {
@@ -185,6 +267,7 @@ export async function editarEmpresaCliente(_prev: EditState, formData: FormData)
     tradeName: text(formData, "tradeName"),
     legalName: text(formData, "legalName"),
     cnpj: text(formData, "cnpj"),
+    address: text(formData, "address"),
   });
   if (!parsed.success) return { error: parsed.error.issues[0]?.message ?? "Dados inválidos." };
 
@@ -195,13 +278,14 @@ export async function editarEmpresaCliente(_prev: EditState, formData: FormData)
       trade_name: parsed.data.tradeName,
       legal_name: parsed.data.legalName,
       cnpj: parsed.data.cnpj || null,
+      address: parsed.data.address || null,
     })
     .eq("id", parsed.data.orgId)
     .select("id")
     .maybeSingle();
 
   if (error) {
-    if (error.code === "23505") return { error: "Já existe outra organização com este CNPJ." };
+    if (error.code === "23505") return { error: "Já existe outra organização com este documento." };
     console.error("[clientes] editar organização: %s", error.message);
     return { error: "Não foi possível salvar. Tente novamente." };
   }

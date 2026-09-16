@@ -96,8 +96,8 @@ export default function ClienteForm() {
           <input name="legalName" required maxLength={160} placeholder="Acme Indústria e Comércio Ltda." />
         </label>
         <label>
-          CNPJ
-          <input name="cnpj" maxLength={18} placeholder="00.000.000/0000-00" />
+          CPF, CNPJ ou CAEPF
+          <input name="cnpj" maxLength={18} placeholder="Só números (opcional)" />
         </label>
         <label>
           Slug do link (vira /relato/&lt;slug&gt;)
@@ -115,23 +115,31 @@ export default function ClienteForm() {
         </label>
         <label>
           Nome do primeiro contato
-          <input name="contactName" required maxLength={120} placeholder="Nome e sobrenome" />
+          <input name="contactName" maxLength={120} placeholder="Nome e sobrenome (opcional)" />
         </label>
         <label>
           E-mail do primeiro contato
           <input
             name="contactEmail"
             type="email"
-            required
             maxLength={320}
-            placeholder="pessoa@empresa.com.br"
+            placeholder="pessoa@empresa.com.br (opcional)"
           />
         </label>
       </div>
+      <label className="wide-field">
+        Endereço
+        <textarea
+          name="address"
+          rows={2}
+          maxLength={300}
+          placeholder="Rua, número, bairro, cidade - UF (opcional)"
+        />
+      </label>
       <p className="lead" style={{ fontSize: 13 }}>
-        O contato entra com o papel Comitê (só leitura de indicadores, relatórios e auditoria).
-        Ajuste o que ele enxerga depois, dentro da organização nova, em Configurações → Time e
-        permissões.
+        O contato é opcional agora — pode ser adicionado depois, na tela da empresa. Quando
+        cadastrado, entra com o papel Comitê (só leitura de indicadores, relatórios e auditoria);
+        ajuste o que ele enxerga em Configurações → Time e permissões.
       </p>
       {state.error ? <span className="field-error-message">{state.error}</span> : null}
       <div className="case-actions">
