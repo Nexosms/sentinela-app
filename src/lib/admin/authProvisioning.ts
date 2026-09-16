@@ -11,6 +11,25 @@ export type ProvisionedUser = {
 };
 
 /**
+ * Monta o link a partir do `token_hash`, apontando direto para `/convite` no
+ * NOSSO domínio — em vez de `properties.action_link` (a própria URL de
+ * verificação do Supabase, em `*.supabase.co`).
+ *
+ * Motivo: `action_link` consome o token na primeira requisição GET, sem
+ * distinguir um clique de verdade de uma prévia automática. WhatsApp,
+ * Telegram e Slack buscam esse link para montar a prévia da mensagem assim
+ * que ela é enviada/colada — e isso já gasta o token de uso único antes de
+ * qualquer pessoa clicar (sintoma: "Email link is invalid or has expired"
+ * em TODO link, mesmo recém-gerado). `ConviteClient.tsx` já sabe processar
+ * `?token_hash=&type=` chamando `verifyOtp` no cliente — como isso só roda
+ * dentro do JavaScript da página (nenhum rastreador de prévia executa React),
+ * uma prévia automática só busca HTML estático e nunca toca no token.
+ */
+function ownInviteLink(properties: { hashed_token: string; verification_type: string }): string {
+  return `${publicEnv.siteUrl}/convite?token_hash=${properties.hashed_token}&type=${properties.verification_type}`;
+}
+
+/**
  * Garante uma conta de autenticação para `email` e devolve um link utilizável
  * — convite (conta nova) ou recuperação (conta já existente: convite
  * anterior, ou vínculo com outra organização). Extraído de
@@ -77,7 +96,7 @@ export async function provisionAuthUser(
         }
       } else {
         userId = gerado.data.user.id;
-        inviteUrl = gerado.data.properties.action_link;
+        inviteUrl = ownInviteLink(gerado.data.properties);
       }
     }
   }
@@ -98,7 +117,7 @@ export async function provisionAuthUser(
       if (!userId) throw new Error(`Não foi possível gerar o link de acesso: ${detalhe}`);
     } else {
       userId = userId ?? recuperacao.data.user.id;
-      inviteUrl = inviteUrl ?? recuperacao.data.properties.action_link;
+      inviteUrl = inviteUrl ?? ownInviteLink(recuperacao.data.properties);
     }
   }
 
