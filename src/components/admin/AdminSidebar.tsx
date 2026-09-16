@@ -36,6 +36,11 @@ export default function AdminSidebar({
       : item;
   });
 
+  // O seletor não oferece organização desativada — só `/admin/clientes`
+  // continua mostrando (e reativando). A organização em que a pessoa já
+  // está fica visível mesmo desativada, para nunca sumir o botão de sair.
+  const trocaveis = myOrgs.filter(org => org.isActive || org.orgId === orgId);
+
   const initials = fullName
     .split(" ")
     .map(part => part[0])
@@ -53,7 +58,7 @@ export default function AdminSidebar({
   return (
     <aside className="admin-sidebar">
       <Brand />
-      {myOrgs.length > 1 ? (
+      {trocaveis.length > 1 ? (
         <details className="tenant-switch">
           <summary className="tenant">
             <span>{orgInitials}</span>
@@ -64,7 +69,7 @@ export default function AdminSidebar({
             <b>⌄</b>
           </summary>
           <div className="tenant-switch-list">
-            {myOrgs.map(org => (
+            {trocaveis.map(org => (
               <form action={trocarOrganizacaoAtiva} key={org.orgId}>
                 <input type="hidden" name="orgId" value={org.orgId} />
                 <button type="submit" className={org.orgId === orgId ? "active" : ""}>

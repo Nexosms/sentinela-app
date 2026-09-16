@@ -4,6 +4,7 @@ import { notFound } from "next/navigation";
 import AdminTopbar from "@/components/admin/AdminTopbar";
 import EditarClienteForm from "@/components/admin/clientes/EditarClienteForm";
 import ConvidarContatoForm from "@/components/admin/clientes/ConvidarContatoForm";
+import AlternarEmpresaForm from "@/components/admin/clientes/AlternarEmpresaForm";
 import { MEMBER_STATUS_LABEL } from "@/lib/admin/configuracoes";
 import { isNexoAdmin } from "@/lib/org/context";
 import { trocarOrganizacaoAtiva } from "@/lib/org/actions";
@@ -40,7 +41,7 @@ export default async function ClienteDetailPage({
   const supabase = await createClient();
   const { data: org } = await supabase
     .from("organizations")
-    .select("id, slug, trade_name, legal_name, cnpj, address")
+    .select("id, slug, trade_name, legal_name, cnpj, address, is_active")
     .eq("id", orgId)
     .maybeSingle();
 
@@ -60,6 +61,24 @@ export default async function ClienteDetailPage({
       <section className="form-card">
         <span className="section-kicker">EMPRESA-CLIENTE</span>
         <h1>{org.trade_name}</h1>
+
+        {org.is_active ? null : (
+          <div className="risk-banner">
+            <span>!</span>
+            <div>
+              <strong>Empresa desativada</strong>
+              <p>
+                O link do relato abaixo não funciona mais para quem tenta abrir, e ela some do
+                seletor de organização de quem trabalha nela. Reative para voltar ao normal.
+              </p>
+            </div>
+          </div>
+        )}
+
+        <div className="list-head">
+          <span>Situação</span>
+          <AlternarEmpresaForm orgId={org.id} tradeName={org.trade_name} isActive={org.is_active} />
+        </div>
 
         <div className="privacy-note">
           <b>Link do relato — dê este aos colaboradores</b>

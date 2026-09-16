@@ -286,3 +286,47 @@ export async function editarEmpresaCliente(_prev: EditState, formData: FormData)
 
   return { ok: true };
 }
+
+const alternarSchema = z.object({ orgId: z.uuid() });
+
+/**
+ * Ativar/desativar, nunca apagar — mesma regra já usada em unidades e
+ * categorias (`alternarUnidade`/`alternarCategoria`,
+ * `src/app/admin/configuracoes/actions.ts`): não existe policy de DELETE em
+ * `organizations`, e apagar de verdade esbarraria em `audit_events` (cada
+ * evento de auditoria da empresa aponta para ela — a trilha é imutável por
+ * design, ver README).
+ *
+ * Desativar já corta o link público na hora (`get_report_catalog()` só
+ * devolve organização com `is_active`) e some do seletor de organização da
+ * sidebar — mas não revoga sessões já abertas nem RLS de quem já tem
+ * vínculo ativo lá: é o mesmo alcance que "desativar uma unidade" já tem.
+ */
+export async function alternarEmpresaCliente(_prev: EditState, formData: FormData): Promise<EditState> {
+  if (!(await isNexoAdmin())) {
+    return { error: "Só a equipe Nexo pode ativar ou desativar uma empresa-cliente." };
+  }
+
+  const parsed = alternarSchema.safeParse({ orgId: text(formData, "orgId") });
+  if (!parsed.success) return { error: "Organização inválida." };
+  const ativar = text(formData, "ativar") === "true";
+
+  const supabase = await createClient();
+  const { data, error } = await supabase
+    .from("organizations")
+    .update({ is_active: ativar })
+    .eq("id", parsed.data.orgId)
+    .select("id");
+
+  if (error) {
+    console.error("[clientes] ativar/desativar: %s", error.message);
+    return { error: "Não foi possível salvar. Tente novamente." };
+  }
+  if (!data || data.length === 0) {
+    return {
+      error: "Nada foi gravado: você não é administrador desta organização, ou ela não existe mais.",
+    };
+  }
+
+  return { ok: true };
+}

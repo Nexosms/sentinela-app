@@ -87,12 +87,23 @@ export const getStaffContext = cache(async (): Promise<StaffContext> => {
   };
 });
 
-export type MyOrganization = { orgId: string; slug: string; tradeName: string; role: AppRole };
+export type MyOrganization = {
+  orgId: string;
+  slug: string;
+  tradeName: string;
+  role: AppRole;
+  isActive: boolean;
+};
 
 /**
  * Todas as organizações onde o usuário atual tem vínculo ativo — alimenta o
  * seletor de organização na sidebar. Para a esmagadora maioria (uma pessoa,
  * uma organização) devolve uma lista de 1, e o seletor não aparece.
+ *
+ * Inclui organizações inativas (`isActive: false`) de propósito: quem
+ * administra a Sentinela precisa continuar vendo (e podendo reativar) um
+ * cliente desativado em `/admin/clientes` — só o público (`/relato/<slug>`)
+ * e o seletor de organização (`AdminSidebar`) filtram isso.
  */
 export const listMyOrganizations = cache(async (): Promise<MyOrganization[]> => {
   const user = await getAuthenticatedUser();
@@ -101,7 +112,7 @@ export const listMyOrganizations = cache(async (): Promise<MyOrganization[]> => 
   const supabase = await createClient();
   const { data } = await supabase
     .from("org_members")
-    .select("org_id, role, organizations(slug, trade_name)")
+    .select("org_id, role, organizations(slug, trade_name, is_active)")
     .eq("user_id", user.id)
     .eq("status", "active");
 
@@ -112,6 +123,7 @@ export const listMyOrganizations = cache(async (): Promise<MyOrganization[]> => 
       slug: row.organizations!.slug,
       tradeName: row.organizations!.trade_name,
       role: row.role,
+      isActive: row.organizations!.is_active,
     }));
 });
 

@@ -246,6 +246,16 @@ cliente precisar de um ajuste que só vale PARA ELE (ex.: esconder uma aba
 específica), use Configurações → "Time e permissões" **daquela
 organização** — isso não muda o vínculo em si, só o que aparece no menu.
 
+**Remover uma empresa-cliente**: não existe DELETE — mesma regra já usada
+em unidades e categorias (`is_active`, nunca apagar a linha): cada evento
+de auditoria da empresa aponta para ela, e `audit_events` é imutável por
+design (ver "Armadilhas registradas"). Em `/admin/clientes` ou
+`/admin/clientes/[orgId]`, o botão ⊘ desativa (`alternarEmpresaCliente`) —
+o link `/relato/<slug>` para de funcionar na hora (`get_report_catalog()`
+só devolve organização ativa) e ela some do seletor de organização de quem
+trabalha nela, mas os dados continuam intactos e ela pode ser reativada
+(⟳) a qualquer momento.
+
 **Trocar de organização**: como a equipe Nexo fica `admin` em várias
 organizações (a própria Sentinela + cada cliente), a caixa com o nome da
 organização no topo da sidebar vira um seletor (só aparece quando há mais

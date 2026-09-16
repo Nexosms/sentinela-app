@@ -3,6 +3,7 @@ import Link from "next/link";
 
 import AdminTopbar from "@/components/admin/AdminTopbar";
 import ClienteForm from "@/components/admin/clientes/ClienteForm";
+import AlternarEmpresaForm from "@/components/admin/clientes/AlternarEmpresaForm";
 import { isNexoAdmin, listMyOrganizations, roleLabel } from "@/lib/org/context";
 
 export const metadata: Metadata = { title: "Clientes" };
@@ -49,8 +50,10 @@ export default async function ClientesPage() {
         <div className="file-list">
           {organizacoes.map(org => (
             <div key={org.orgId}>
+              <span>{org.isActive ? "◈" : "◇"}</span>
               <b>
                 {org.tradeName}
+                {org.isActive ? null : " (desativada)"}
                 <small>
                   /relato/{org.slug} · {roleLabel(org.role)}
                 </small>
@@ -62,6 +65,7 @@ export default async function ClientesPage() {
               >
                 ✎
               </Link>
+              <AlternarEmpresaForm orgId={org.orgId} tradeName={org.tradeName} isActive={org.isActive} />
             </div>
           ))}
         </div>
