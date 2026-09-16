@@ -684,6 +684,60 @@ export async function alterarSituacaoMembro(
   };
 }
 
+const removerSchema = z.object({ id: z.string().regex(UUID, "Vínculo inválido.") });
+
+/**
+ * Remove o vínculo por completo — some da lista, diferente de suspender.
+ * A conta de autenticação da pessoa não é tocada aqui: ela pode ter vínculo
+ * com outra organização, e mesmo sem nenhum outro continua podendo ser
+ * reconvidada depois. `members_delete` (RLS) já exige admin; o gate aqui é
+ * só cortesia, como nas ações acima.
+ *
+ * Ninguém remove o próprio vínculo por aqui — além do risco óbvio de
+ * autoexclusão acidental, `app.write_audit` (chamado pelo trigger de
+ * auditoria) exige que quem grava o evento ainda tenha um vínculo ativo
+ * nesta organização; removendo a si mesmo, essa checagem falharia depois
+ * que a própria linha já tivesse sumido, e a operação inteira seria desfeita
+ * com um erro confuso. Peça a outro administrador.
+ */
+export async function removerMembro(_prev: ActionState, formData: FormData): Promise<ActionState> {
+  const parsed = removerSchema.safeParse({ id: text(formData, "id") });
+  if (!parsed.success) return { error: firstIssue(parsed.error) };
+
+  const staff = await getStaffContext();
+  const supabase = await createClient();
+
+  const { data: member } = await supabase
+    .from("org_members")
+    .select("id, org_id, user_id, role, status")
+    .eq("id", parsed.data.id)
+    .maybeSingle();
+  if (!member) return { error: "Vínculo não encontrado nesta organização." };
+
+  if (member.user_id === staff.userId) {
+    return { error: "Peça a outro administrador para remover o seu próprio acesso." };
+  }
+
+  if (
+    member.role === "admin" &&
+    member.status === "active" &&
+    (await outrosAdminsAtivos(member.org_id, member.id)) === 0
+  ) {
+    return { error: "Recusado: esta pessoa é o último administrador ativo da organização." };
+  }
+
+  const { error, count } = await supabase
+    .from("org_members")
+    .delete({ count: "exact" })
+    .eq("id", parsed.data.id);
+
+  if (error) return fail("remover vínculo", error.message, "Não foi possível remover este acesso.");
+  if (!count) return { error: VANISHED };
+
+  revalidateSettings();
+  return { ok: true, aviso: "Removido do time. Para voltar a ter acesso, será preciso convidar de novo." };
+}
+
 // ── Permissões por cargo ─────────────────────────────────────────────────────
 
 const NAV_KEYS = CONFIGURABLE_NAV_ITEMS.map(item => item.key);

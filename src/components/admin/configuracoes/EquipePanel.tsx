@@ -12,7 +12,7 @@ import {
 } from "@/lib/admin/configuracoes";
 import { CONFIGURABLE_NAV_ITEMS, isNavVisible } from "@/lib/admin/navItems";
 import ConviteForm from "./ConviteForm";
-import { PapelForm, PermissoesForm, SituacaoForm, type Membro } from "./SettingsControls";
+import { PapelForm, PermissoesForm, RemoverForm, SituacaoForm, type Membro } from "./SettingsControls";
 
 /**
  * Quem tem acesso ao canal, com papel e situação.
@@ -142,6 +142,11 @@ export default async function EquipePanel({
             }
           />
           <SituacaoForm membro={emEdicao} />
+          {emEdicao.user_id === staff.userId ? (
+            <p className="lead">Para remover o seu próprio acesso, peça a outro administrador.</p>
+          ) : emEdicao.role === "admin" && emEdicao.status === "active" && adminsAtivos.length === 1 ? null : (
+            <RemoverForm membro={emEdicao} />
+          )}
         </>
       ) : null}
 

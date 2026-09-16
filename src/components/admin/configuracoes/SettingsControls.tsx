@@ -10,6 +10,7 @@ import {
   atualizarPermissoesPapel,
   criarCategoria,
   criarUnidade,
+  removerMembro,
   salvarCategoria,
   salvarOrganizacao,
   salvarUnidade,
@@ -584,6 +585,37 @@ export function SituacaoForm({ membro }: { membro: Membro }) {
           ? " O convite foi enviado e o vínculo já existe; a pessoa entra sozinha ao definir a senha pelo link do convite. Liberar aqui só é necessário se ela não conseguir usar o link."
           : ""}
       </p>
+      <Feedback state={state} />
+    </>
+  );
+}
+
+/**
+ * Remover é diferente de suspender: some da lista, e só volta com um convite
+ * novo. Por isso o `confirm()` nativo antes de enviar — mesmo padrão de
+ * fricção extra que uma exclusão pede, sem precisar de um modal próprio.
+ */
+export function RemoverForm({ membro }: { membro: Membro }) {
+  const [state, action, pending] = useActionState(removerMembro, EMPTY);
+
+  return (
+    <>
+      <form
+        action={action}
+        onSubmit={event => {
+          const confirmado = window.confirm(
+            `Remover ${membro.full_name} do time? A pessoa perde o acesso a esta organização agora, e só volta com um convite novo.`,
+          );
+          if (!confirmado) event.preventDefault();
+        }}
+      >
+        <input type="hidden" name="id" value={membro.id} />
+        <div className="case-actions">
+          <button type="submit" disabled={pending}>
+            {pending ? "Removendo…" : "Remover do time"}
+          </button>
+        </div>
+      </form>
       <Feedback state={state} />
     </>
   );
