@@ -34,6 +34,9 @@ body{font-size:16px;line-height:1.55;-webkit-font-smoothing:antialiased;text-ren
 .info-hint-holder{position:relative;display:inline-flex}.info-hint{display:inline-grid;width:19px;height:19px;padding:0;place-items:center;border:1px solid rgba(216,31,24,.36);border-radius:50%;background:var(--paper);color:var(--teal);font-family:var(--font-display),Arial,sans-serif;font-size:12px;font-style:italic;font-weight:800;line-height:1;cursor:pointer}.info-hint-bubble{position:absolute;z-index:5;top:calc(100% + 6px);left:0;width:max-content;max-width:240px;padding:10px 12px;background:var(--deep);color:#fff;border-radius:8px;font-size:12px;font-style:normal;font-weight:500;line-height:1.5;box-shadow:0 8px 20px rgba(0,0,0,.18)}
 .field-error input,.field-error select,.field-error textarea{border-color:var(--danger);box-shadow:0 0 0 3px rgba(183,68,62,.08)}
 .risk.arquivada{color:#5c6664;background:#e7e9e6}
+.tenant-doc{display:block;margin-top:2px;color:#7f9591;font:400 8px var(--font-geist-mono),monospace;font-style:normal;letter-spacing:.02em}
+.tenant-switch-list button{display:flex;flex-direction:column;align-items:flex-start;gap:1px}
+.tenant-switch-list .tenant-doc{color:#6b807c}
 .field-error-message{display:block;margin-top:7px;color:var(--danger);font-size:13px;font-weight:800;line-height:1.35}
 .category-multiselect{margin:20px 0 0;padding:22px;border:1px solid var(--line);border-radius:16px;background:#f7f8f4}
 .category-multiselect legend{padding:0 8px;color:var(--deep);font-size:14px;font-weight:850}

@@ -5,6 +5,7 @@ import SignOutButton from "./SignOutButton";
 import { roleLabel, type AppRole, type MyOrganization } from "@/lib/org/context";
 import { trocarOrganizacaoAtiva } from "@/lib/org/actions";
 import { NAV_ITEMS, CONFIGURACOES_ITEM, isNavVisible, type NavOverrides } from "@/lib/admin/navItems";
+import { formatDocumento } from "@/lib/admin/configuracoes";
 
 const SIDEBAR_ITEMS = NAV_ITEMS.filter(entry => entry.key !== "configuracoes");
 
@@ -55,6 +56,10 @@ export default function AdminSidebar({
     .slice(0, 2)
     .toUpperCase();
 
+  // O documento ajuda a diferenciar clientes com nome parecido, tanto no
+  // resumo da organização atual quanto na lista de troca.
+  const orgDoc = myOrgs.find(org => org.orgId === orgId)?.cnpj ?? null;
+
   return (
     <aside className="admin-sidebar">
       <Brand />
@@ -65,6 +70,7 @@ export default function AdminSidebar({
             <div>
               <small>{roleLabel(role)}</small>
               <strong>{orgName}</strong>
+              <em className="tenant-doc">{formatDocumento(orgDoc)}</em>
             </div>
             <b>⌄</b>
           </summary>
@@ -74,6 +80,7 @@ export default function AdminSidebar({
                 <input type="hidden" name="orgId" value={org.orgId} />
                 <button type="submit" className={org.orgId === orgId ? "active" : ""}>
                   {org.tradeName}
+                  <em className="tenant-doc">{formatDocumento(org.cnpj)}</em>
                 </button>
               </form>
             ))}
@@ -85,6 +92,7 @@ export default function AdminSidebar({
           <div>
             <small>{roleLabel(role)}</small>
             <strong>{orgName}</strong>
+            <em className="tenant-doc">{formatDocumento(orgDoc)}</em>
           </div>
           <b>⌄</b>
         </div>

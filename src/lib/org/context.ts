@@ -93,6 +93,7 @@ export type MyOrganization = {
   tradeName: string;
   role: AppRole;
   isActive: boolean;
+  cnpj: string | null;
 };
 
 /**
@@ -112,7 +113,7 @@ export const listMyOrganizations = cache(async (): Promise<MyOrganization[]> => 
   const supabase = await createClient();
   const { data } = await supabase
     .from("org_members")
-    .select("org_id, role, organizations(slug, trade_name, is_active)")
+    .select("org_id, role, organizations(slug, trade_name, is_active, cnpj)")
     .eq("user_id", user.id)
     .eq("status", "active");
 
@@ -124,6 +125,7 @@ export const listMyOrganizations = cache(async (): Promise<MyOrganization[]> => 
       tradeName: row.organizations!.trade_name,
       role: row.role,
       isActive: row.organizations!.is_active,
+      cnpj: row.organizations!.cnpj,
     }));
 });
 
