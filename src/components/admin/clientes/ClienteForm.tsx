@@ -1,6 +1,7 @@
 "use client";
 
 import { useActionState, useState } from "react";
+import Link from "next/link";
 
 import { criarEmpresaCliente, type ActionState } from "@/app/admin/clientes/actions";
 import { trocarOrganizacaoAtiva } from "@/lib/org/actions";
@@ -64,12 +65,19 @@ export default function ClienteForm() {
           ) : null}
 
           {state.novaOrgId ? (
-            <form action={trocarOrganizacaoAtiva} style={{ marginTop: 14 }}>
-              <input type="hidden" name="orgId" value={state.novaOrgId} />
-              <button className="primary-button" type="submit">
-                Entrar em {state.novaOrgSlug} <span>→</span>
-              </button>
-            </form>
+            <>
+              <form action={trocarOrganizacaoAtiva} style={{ marginTop: 14 }}>
+                <input type="hidden" name="orgId" value={state.novaOrgId} />
+                <button className="primary-button" type="submit">
+                  Entrar em {state.novaOrgSlug} <span>→</span>
+                </button>
+              </form>
+              <p style={{ marginTop: 10 }}>
+                <Link className="quiet-link" href={`/admin/clientes/${state.novaOrgId}`}>
+                  Editar dados cadastrais →
+                </Link>
+              </p>
+            </>
           ) : null}
         </div>
       </div>

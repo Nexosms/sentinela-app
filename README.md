@@ -210,6 +210,7 @@ Aplicadas via MCP do Supabase, em ordem. `supabase migration list` no projeto
 | 032 | `app.audit_action_measure()` passa a avisar o responsável assim que uma medida é criada/reatribuída (`measure.assigned`, novo valor no CHECK de `notifications.kind`); `app.audit_investigation()` passa a avisar também o líder (`lead_id`), além do aviso em bloco para `admin` |
 | 033 | `t_org_member_audit` passa a disparar também em DELETE — remover alguém do time (`removerMembro`) grava `member.removed`, novo valor na lista branca de `app.write_audit` |
 | 034 | `organizations_cnpj_check` passa a aceitar CPF (11 dígitos) além de CNPJ/CAEPF (14) no documento da empresa-cliente; nova coluna `organizations.address` (texto livre) |
+| 035 | Todo vínculo com a organização "Sentinela" passa a ser espelhado automaticamente em toda organização-cliente (mesmo papel/situação) — `app.seed_org_members_from_sentinela()` (organização nova) e `app.mirror_sentinela_member()` (entra/sai/muda de papel na Sentinela), mais backfill único para as organizações já existentes |
 
 ### Cadastrar uma empresa-cliente nova
 
@@ -224,19 +225,26 @@ e-mail/nome do primeiro contato da empresa, e faz tudo num passo só
 (`criarEmpresaCliente`, em `src/app/admin/clientes/actions.ts`):
 
 1. Cria a `organization` (slug único, vira `/relato/<slug>`).
-2. Vincula quem está cadastrando (a pessoa da Nexo) como `admin` daquela
-   organização — a Nexo continua sendo quem administra de verdade cada
-   cliente.
-3. Convida o contato do cliente com **papel `comite`** (só leitura de
-   indicadores, relatórios e auditoria — não mexe em denúncias/
-   investigações), reaproveitando o mesmo provisionamento de conta do
-   convite de equipe (`src/lib/admin/authProvisioning.ts`) — a pessoa
-   recebe um e-mail para definir a própria senha; a Nexo nunca vê senha de
-   cliente.
+2. Todo mundo que já tem vínculo com a Sentinela (qualquer papel) é
+   vinculado automaticamente à organização nova, com o mesmo papel — não é
+   código do app, é o trigger `t_seed_org_members_from_sentinela`
+   (migração 035). A Nexo continua sendo quem administra de verdade cada
+   cliente; o contato do cliente é opcional (item 3).
+3. Convite opcional do contato do cliente com **papel `comite`** (só
+   leitura de indicadores, relatórios e auditoria — não mexe em
+   denúncias/investigações), reaproveitando o mesmo provisionamento de
+   conta do convite de equipe (`src/lib/admin/authProvisioning.ts`) — a
+   pessoa recebe um e-mail para definir a própria senha; a Nexo nunca vê
+   senha de cliente. Se não for preenchido no cadastro, dá para convidar
+   depois direto em `/admin/clientes/[orgId]`.
 
-Se o cliente precisar ver mais ou menos do que o padrão do papel Comitê,
-ajustar em Configurações → "Time e permissões" **daquela organização** — é
-por organização, então não afeta outros clientes.
+**Toda a equipe da Sentinela enxerga todo cliente, sempre.** Não é preciso
+convidar ninguém da Nexo organização por organização — entrar/sair da
+Sentinela, ou mudar de papel lá, se propaga automaticamente para toda
+organização-cliente (`app.mirror_sentinela_member()`, migração 035). Se um
+cliente precisar de um ajuste que só vale PARA ELE (ex.: esconder uma aba
+específica), use Configurações → "Time e permissões" **daquela
+organização** — isso não muda o vínculo em si, só o que aparece no menu.
 
 **Trocar de organização**: como a equipe Nexo fica `admin` em várias
 organizações (a própria Sentinela + cada cliente), a caixa com o nome da
@@ -306,6 +314,13 @@ confirmar sob RLS que a pessoa realmente tem vínculo ativo ali.
   e os demais tokens com `''`. NULL quebra o login com
   `converting NULL to string is unsupported`. Na aplicação, use sempre a Admin
   API (`inviteUserByEmail`).
+- **Não insira/edite/apague em `org_members` da organização "Sentinela"
+  esperando que o efeito fique só ali.** Desde a migração 035, qualquer
+  INSERT/UPDATE/DELETE num vínculo da Sentinela dispara
+  `app.mirror_sentinela_member()`, que espelha a mesma mudança em **toda**
+  organização-cliente. É o comportamento desejado (ver "Cadastrar uma
+  empresa-cliente nova" acima) — só não tente "corrigir" um vínculo da
+  Sentinela achando que é um ajuste local.
 - **Sem `NEXT_PUBLIC_SITE_URL` em produção, todo link de convite/recuperação
   aponta para `localhost:3000`.** `src/lib/admin/authProvisioning.ts` monta o
   `redirectTo` a partir de `publicEnv.siteUrl`

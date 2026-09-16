@@ -118,20 +118,9 @@ export async function criarEmpresaCliente(_prev: ActionState, formData: FormData
   }
   if (!org) return { error: "A organização não foi criada." };
 
-  const now = new Date().toISOString();
-  const { error: nexoError } = await admin.from("org_members").insert({
-    org_id: org.id,
-    user_id: staff.userId,
-    role: "admin",
-    status: "active",
-    activated_at: now,
-  });
-  if (nexoError) {
-    console.error("[clientes] vínculo Nexo: %s", nexoError.message);
-    return {
-      error: "A organização foi criada, mas o vínculo da Nexo com ela falhou. Fale com quem mantém o sistema.",
-    };
-  }
+  // O vínculo da Nexo (e de todo mundo que já está na Sentinela, com o mesmo
+  // papel) é criado automaticamente pelo trigger `t_seed_org_members_from_sentinela`
+  // (migração 035) assim que a linha acima é inserida — nada a fazer aqui.
 
   // Sem contato informado: organização criada, convite fica para depois
   // (tela da empresa em /admin/clientes/[orgId]).
