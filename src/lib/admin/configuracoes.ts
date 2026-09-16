@@ -201,6 +201,13 @@ export function isValidCpf(value: string): boolean {
  * inválido (um único dígito repetido). Isso é deliberadamente mais
  * permissivo que `isValidCnpj` (que continua estrita, usada só para o CNPJ
  * de uma unidade interna).
+ *
+ * SEM CALL SITE DE PROPÓSITO (a partir de setembro/2026): documentos reais
+ * de cliente continuaram sendo recusados mesmo com essa regra mais
+ * permissiva — a variedade real é maior do que uma lista fechada consegue
+ * prever. O cadastro de empresa-cliente e o painel Organização não chamam
+ * mais isto; a função fica só como referência, caso uma checagem mais leve
+ * volte a fazer sentido no futuro.
  */
 export function isValidDocumento(value: string): boolean {
   const digits = onlyDigits(value);

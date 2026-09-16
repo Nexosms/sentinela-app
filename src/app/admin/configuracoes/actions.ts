@@ -12,7 +12,6 @@ import {
   UFS,
   UUID,
   isValidCnpj,
-  isValidDocumento,
   onlyDigits,
   slugifyCode,
 } from "@/lib/admin/configuracoes";
@@ -164,15 +163,10 @@ export async function salvarOrganizacao(
   });
   if (!parsed.success) return { error: firstIssue(parsed.error), enviado: eco };
 
-  // O banco aceita CPF (11 dígitos) ou CNPJ/CAEPF (14) — `organizations_cnpj_check`.
-  // Quem digita cola com pontuação; limpar e conferir aqui evita o 23514 cru.
+  // Sem validação de formato/dígito verificador de propósito: documentos
+  // reais de clientes (CPF, CNPJ, CAEPF e variações) não cabem numa lista
+  // fechada de regras. Só limpa a pontuação que quem digita cola junto.
   const digits = onlyDigits(parsed.data.cnpj);
-  if (digits !== "" && !isValidDocumento(digits)) {
-    return {
-      error: "Documento inválido. Confira o CPF, CNPJ ou CAEPF digitado.",
-      enviado: eco,
-    };
-  }
 
   const staff = await getStaffContext();
   const supabase = await createClient();

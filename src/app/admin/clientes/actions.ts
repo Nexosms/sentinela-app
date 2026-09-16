@@ -5,7 +5,7 @@ import { z } from "zod";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { createClient } from "@/lib/supabase/server";
 import { getStaffContext, isNexoAdmin } from "@/lib/org/context";
-import { onlyDigits, isValidDocumento } from "@/lib/admin/configuracoes";
+import { onlyDigits } from "@/lib/admin/configuracoes";
 import { provisionAuthUser } from "@/lib/admin/authProvisioning";
 import { relatoUrl } from "@/lib/admin/clientes";
 
@@ -52,8 +52,7 @@ const schema = z.object({
     .string()
     .trim()
     .optional()
-    .transform(value => (value ? onlyDigits(value) : ""))
-    .refine(value => value === "" || isValidDocumento(value), "Documento inválido."),
+    .transform(value => (value ? onlyDigits(value) : "")),
   address: z.string().trim().max(300).optional(),
   contactEmail: z
     .string()
@@ -245,8 +244,7 @@ const editSchema = z.object({
     .string()
     .trim()
     .optional()
-    .transform(value => (value ? onlyDigits(value) : ""))
-    .refine(value => value === "" || isValidDocumento(value), "Documento inválido."),
+    .transform(value => (value ? onlyDigits(value) : "")),
   address: z.string().trim().max(300).optional(),
 });
 

@@ -211,6 +211,7 @@ Aplicadas via MCP do Supabase, em ordem. `supabase migration list` no projeto
 | 033 | `t_org_member_audit` passa a disparar também em DELETE — remover alguém do time (`removerMembro`) grava `member.removed`, novo valor na lista branca de `app.write_audit` |
 | 034 | `organizations_cnpj_check` passa a aceitar CPF (11 dígitos) além de CNPJ/CAEPF (14) no documento da empresa-cliente; nova coluna `organizations.address` (texto livre) |
 | 035 | Todo vínculo com a organização "Sentinela" passa a ser espelhado automaticamente em toda organização-cliente (mesmo papel/situação) — `app.seed_org_members_from_sentinela()` (organização nova) e `app.mirror_sentinela_member()` (entra/sai/muda de papel na Sentinela), mais backfill único para as organizações já existentes |
+| 036 | Remove `organizations_cnpj_check` — documentos reais de cliente (CPF/CNPJ/CAEPF e variações) continuavam sendo recusados mesmo com a regra mais permissiva da 034; o campo aceita qualquer valor agora (a UNIQUE de documento continua) |
 
 ### Cadastrar uma empresa-cliente nova
 
