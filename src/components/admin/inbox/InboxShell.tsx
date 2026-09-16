@@ -11,11 +11,13 @@ import {
   riskClass,
 } from "@/lib/admin/labels";
 import {
+  INBOX_BOXES,
   INBOX_PATH,
   PAGE_SIZE,
   UNASSIGNED,
   activeFilterCount,
   caseHref,
+  inboxBoxHref,
   inboxQuery,
   looksLikeProtocol,
   type InboxFilters,
@@ -69,7 +71,14 @@ export default async function InboxShell({
       { count: "exact" },
     );
 
-  if (filters.status) query = query.eq("status", filters.status);
+  // "Arquivadas" é a única caixa que mostra `arquivada` — em "Ativas" ela
+  // nunca aparece, mesmo que um filtro de status antigo ainda esteja na URL.
+  if (filters.caixa === "arquivadas") {
+    query = query.eq("status", "arquivada");
+  } else {
+    query = query.neq("status", "arquivada");
+    if (filters.status) query = query.eq("status", filters.status);
+  }
   if (filters.risk) query = query.eq("risk", filters.risk);
   if (filters.unidade) query = query.eq("org_unit_id", filters.unidade);
   if (filters.responsavel === UNASSIGNED) query = query.is("assigned_to", null);
@@ -108,11 +117,26 @@ export default async function InboxShell({
   // Paginar com um caso aberto não deve fechá-lo.
   const basePath = selectedId ? `${INBOX_PATH}/${selectedId}` : INBOX_PATH;
 
+  const arquivadas = filters.caixa === "arquivadas";
+
   return (
     <div className="inbox">
+      <div className="detail-tabs">
+        {INBOX_BOXES.map(box => (
+          <Link
+            key={box.key}
+            href={inboxBoxHref(filters, box.key)}
+            className={filters.caixa === box.key ? "active" : ""}
+          >
+            {box.label}
+          </Link>
+        ))}
+      </div>
+
       {/* Filtros sem JavaScript: GET puro, para a página seguir sendo Server Component. */}
       <form className="inbox-tools" method="get">
         {filters.aba !== "visao-geral" ? <input type="hidden" name="aba" value={filters.aba} /> : null}
+        {arquivadas ? <input type="hidden" name="caixa" value={filters.caixa} /> : null}
         <div className="searchbox">
           ⌕{" "}
           <input
@@ -123,14 +147,16 @@ export default async function InboxShell({
           />
         </div>
         <div className="searchbox">
-          <select name="status" defaultValue={filters.status} aria-label="Filtrar por status">
-            <option value="">Todos os status</option>
-            {STATUS_ORDER.map(status => (
-              <option key={status} value={status}>
-                {STATUS_LABEL[status]}
-              </option>
-            ))}
-          </select>
+          {arquivadas ? null : (
+            <select name="status" defaultValue={filters.status} aria-label="Filtrar por status">
+              <option value="">Todos os status</option>
+              {STATUS_ORDER.filter(status => status !== "arquivada").map(status => (
+                <option key={status} value={status}>
+                  {STATUS_LABEL[status]}
+                </option>
+              ))}
+            </select>
+          )}
           <select name="risk" defaultValue={filters.risk} aria-label="Filtrar por risco">
             <option value="">Todos os riscos</option>
             {RISK_ORDER.map(risk => (
@@ -186,18 +212,24 @@ export default async function InboxShell({
             >
               <div className="case-row-top">
                 <code>{item.protocol}</code>
-                <span className={riskClass(item.risk)}>{RISK_LABEL[item.risk]}</span>
+                {item.status === "arquivada" ? (
+                  <span className="risk arquivada">ARQUIVADA</span>
+                ) : (
+                  <span className={riskClass(item.risk)}>{RISK_LABEL[item.risk]}</span>
+                )}
               </div>
               <strong>{primaryCategory(item.report_categories)}</strong>
               <small>
                 {item.org_units?.name ? `${item.org_units.name} · ` : ""}
                 {relativeAge(item.created_at)}
               </small>
-              <div className="case-flags">
-                {flagsOf(item).map(flag => (
-                  <i key={flag}>{flag}</i>
-                ))}
-              </div>
+              {item.status === "arquivada" ? null : (
+                <div className="case-flags">
+                  {flagsOf(item).map(flag => (
+                    <i key={flag}>{flag}</i>
+                  ))}
+                </div>
+              )}
             </Link>
           ))}
           {list.length === 0 ? (

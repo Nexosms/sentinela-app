@@ -20,6 +20,20 @@ export type InboxTab = (typeof TABS)[number]["key"];
 
 const TAB_KEYS = TABS.map(tab => tab.key) as readonly string[];
 
+/**
+ * Abas da LISTA (não confundir com `TABS`/`aba` acima, que são as abas do
+ * DETALHE de um caso). Nome de parâmetro diferente (`caixa`) de propósito,
+ * para não colidir com `aba` na mesma querystring.
+ */
+export const INBOX_BOXES = [
+  { key: "ativas", label: "Ativas" },
+  { key: "arquivadas", label: "Arquivadas" },
+] as const;
+
+export type InboxBox = (typeof INBOX_BOXES)[number]["key"];
+
+const BOX_KEYS = INBOX_BOXES.map(box => box.key) as readonly string[];
+
 /** Em Next 16 `searchParams` chega como Promise; o tipo é o do valor já resolvido. */
 export type SearchParams = Record<string, string | string[] | undefined>;
 
@@ -31,9 +45,19 @@ export type InboxFilters = {
   responsavel: string;
   pagina: number;
   aba: InboxTab;
+  caixa: InboxBox;
 };
 
-const PARAM_ORDER = ["q", "status", "risk", "unidade", "responsavel", "pagina", "aba"] as const;
+const PARAM_ORDER = [
+  "q",
+  "status",
+  "risk",
+  "unidade",
+  "responsavel",
+  "pagina",
+  "aba",
+  "caixa",
+] as const;
 
 type ParamKey = (typeof PARAM_ORDER)[number];
 
@@ -49,6 +73,7 @@ export function parseFilters(params: SearchParams): InboxFilters {
   const unidade = one(params.unidade);
   const responsavel = one(params.responsavel);
   const aba = one(params.aba);
+  const caixa = one(params.caixa);
   const pagina = Number.parseInt(one(params.pagina), 10);
 
   return {
@@ -60,6 +85,7 @@ export function parseFilters(params: SearchParams): InboxFilters {
     responsavel: responsavel === UNASSIGNED || UUID.test(responsavel) ? responsavel : "",
     pagina: Number.isFinite(pagina) && pagina > 1 ? pagina : 1,
     aba: TAB_KEYS.includes(aba) ? (aba as InboxTab) : "visao-geral",
+    caixa: BOX_KEYS.includes(caixa) ? (caixa as InboxBox) : "ativas",
   };
 }
 
@@ -86,6 +112,7 @@ export function inboxQuery(
     responsavel: filters.responsavel,
     pagina: filters.pagina > 1 ? String(filters.pagina) : "",
     aba: filters.aba === "visao-geral" ? "" : filters.aba,
+    caixa: filters.caixa === "ativas" ? "" : filters.caixa,
   };
 
   for (const [key, value] of Object.entries(overrides)) {
@@ -102,6 +129,11 @@ export function inboxQuery(
 
 export function caseHref(id: string, filters: InboxFilters, tab?: InboxTab): string {
   return `${INBOX_PATH}/${id}${inboxQuery(filters, tab ? { aba: tab } : {})}`;
+}
+
+/** Troca de caixa (Ativas/Arquivadas) sempre volta para a primeira página. */
+export function inboxBoxHref(filters: InboxFilters, box: InboxBox): string {
+  return `${INBOX_PATH}${inboxQuery(filters, { caixa: box === "ativas" ? null : box, pagina: null })}`;
 }
 
 /**

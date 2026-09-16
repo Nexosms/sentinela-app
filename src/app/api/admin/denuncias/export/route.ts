@@ -37,6 +37,7 @@ type Filtros = {
   risk: RiskLevel[];
   unidade: string | null;
   responsavel: string | null;
+  caixa: "ativas" | "arquivadas";
 };
 
 /** Aceita `status=a&status=b` e `status=a,b`; descarta o que não é do enum. */
@@ -57,6 +58,7 @@ function parseFiltros(url: URL): Filtros {
     // "nenhum" é o único valor não-uuid aceito: sem unidade / sem responsável.
     unidade: unidade === "nenhum" || UUID.test(unidade) ? unidade : null,
     responsavel: responsavel === "nenhum" || UUID.test(responsavel) ? responsavel : null,
+    caixa: url.searchParams.get("caixa") === "arquivadas" ? "arquivadas" : "ativas",
   };
 }
 
@@ -102,7 +104,13 @@ export async function GET(request: Request): Promise<Response> {
     .order("created_at", { ascending: false })
     .limit(5000);
 
-  if (filtros.status.length > 0) query = query.in("status", filtros.status);
+  // Mesma regra da tela: "Arquivadas" só mostra arquivada; "Ativas" nunca mostra.
+  if (filtros.caixa === "arquivadas") {
+    query = query.eq("status", "arquivada");
+  } else {
+    query = query.neq("status", "arquivada");
+    if (filtros.status.length > 0) query = query.in("status", filtros.status);
+  }
   if (filtros.risk.length > 0) query = query.in("risk", filtros.risk);
   if (filtros.unidade === "nenhum") query = query.is("org_unit_id", null);
   else if (filtros.unidade) query = query.eq("org_unit_id", filtros.unidade);

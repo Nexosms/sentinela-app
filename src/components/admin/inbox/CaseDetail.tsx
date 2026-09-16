@@ -136,7 +136,11 @@ export default async function CaseDetail({ id, filters }: { id: string; filters:
             {identificacao} · recebido {relativeAge(report.created_at)}
           </span>
         </div>
-        <span className={riskClass(report.risk)}>{RISK_LABEL[report.risk]}</span>
+        {report.status === "arquivada" ? (
+          <span className="risk arquivada">ARQUIVADA</span>
+        ) : (
+          <span className={riskClass(report.risk)}>{RISK_LABEL[report.risk]}</span>
+        )}
       </div>
 
       {/* Abas por URL: o conteúdo é do servidor e o link é compartilhável entre investigadores. */}
