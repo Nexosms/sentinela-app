@@ -33,6 +33,54 @@ export const RECURRENCES = [
   { value: "unknown",   label: "Não sei informar" },
 ] as const;
 
+/**
+ * Explicação de cada categoria do relato, uma frase objetiva por `code`
+ * (`categories.code` no banco — ver `CategoryOption` em `lib/report/catalog.ts`).
+ * Mostrada pelo "i" ao lado de cada opção em Step2OQueAconteceu. Categorias
+ * criadas depois (por organização) simplesmente não têm entrada aqui — o "i"
+ * some nesse caso, em vez de mostrar um texto genérico sem sentido.
+ */
+export const CATEGORY_INFO: Record<string, string> = {
+  assedio_moral:
+    "Humilhação, ridicularização ou hostilidade repetida no ambiente de trabalho, capaz de abalar a dignidade ou a saúde da pessoa.",
+  assedio_sexual:
+    "Investida, comentário ou contato de natureza sexual não consentido, ou uso de posição hierárquica para obter favor sexual.",
+  discriminacao:
+    "Tratamento desigual por motivo de gênero, raça, idade, religião, orientação sexual, deficiência ou outra característica pessoal.",
+  outra_violencia:
+    "Qualquer violência ou conduta inadequada relacionada ao trabalho que não se encaixe nas opções acima — descreva no campo de especificação.",
+  retaliacao:
+    "Prejuízo, ameaça ou tratamento desfavorável sofrido por já ter relatado ou denunciado algo antes.",
+  outra_conduta:
+    "Uma conduta inadequada que não é bem uma violência, mas ainda assim precisa ser relatada — descreva no campo de especificação.",
+  sobrecarga:
+    "Volume de trabalho, prazos ou ritmo além do que é possível sustentar com qualidade e saúde.",
+  subcarga:
+    "Falta de tarefas, tempo ocioso excessivo ou subaproveitamento das suas capacidades no trabalho.",
+  baixa_autonomia:
+    "Pouca ou nenhuma liberdade para decidir como, quando ou em que ordem realizar as próprias tarefas.",
+  falta_suporte:
+    "Ausência de ajuda de colegas, liderança ou da organização quando você precisa para realizar o trabalho.",
+  ambiguidade_papel:
+    "Não fica claro o que se espera de você, quais são suas responsabilidades ou a quem você responde.",
+  falta_reconhecimento:
+    "Esforço ou bom desempenho que não recebem retorno, valorização ou recompensa proporcional.",
+  injustica_organizacional:
+    "Sensação de que as regras, decisões ou oportunidades não são aplicadas de forma justa e igual para todos.",
+  gestao_mudancas:
+    "Mudanças na empresa (reestruturação, novos processos, etc.) feitas sem comunicação clara ou preparo suficiente.",
+  relacionamentos_conflituosos:
+    "Conflitos, hostilidade ou relações desgastadas com colegas, liderança ou subordinados.",
+  comunicacao:
+    "Informações que não chegam, chegam tarde ou de forma confusa, prejudicando o trabalho.",
+  trabalho_isolado:
+    "Isolamento social ou profissional por trabalhar sozinho, à distância ou sem contato regular com a equipe.",
+  evento_traumatico:
+    "Assalto, acidente grave, ameaça ou outra situação chocante vivida ou testemunhada por causa do trabalho.",
+  outro_fator:
+    "Um fator relacionado a como o trabalho é organizado que não está nas opções acima — descreva no campo de especificação.",
+};
+
 const trimmed = (max: number) => z.string().trim().max(max);
 
 /** Metadados de um arquivo, declarados pelo cliente. Os valores reais são

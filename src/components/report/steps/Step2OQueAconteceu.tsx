@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 
-import { RECURRENCES, RELATIONSHIPS } from "@/lib/report/schema";
+import { CATEGORY_INFO, RECURRENCES, RELATIONSHIPS } from "@/lib/report/schema";
 
 import { FieldError, FieldTitle, InfoHint } from "../fields";
 import { useWizard } from "../wizardState";
@@ -148,6 +148,9 @@ export default function Step2OQueAconteceu() {
                       onChange={() => toggleCategory(item.id)}
                     />
                     <span>{item.label}</span>
+                    {CATEGORY_INFO[item.code] && (
+                      <InfoHint label={item.label} info={CATEGORY_INFO[item.code]} />
+                    )}
                   </label>
                 ))}
               </section>
