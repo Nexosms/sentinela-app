@@ -159,6 +159,12 @@ para acrescentar achado ou entrevista a uma investigação já assinada (direto 
 pela interface), e `triagem` — que só deveria acompanhar — podia escrever no dossiê. O predicado
 `app.inv_writable()` agora exige apuração aberta **e** papel de escrita, nas cinco filhas.
 
+**Decisão revista na 037:** Triagem passou a poder *abrir* uma investigação (`inv_insert`) e
+vincular a denúncia de origem (`inv_reports_insert`) — é o botão "Abrir investigação" na tela da
+denúncia. `app.inv_writable()` continua intocada: Triagem não escreve equipe, entrevistas, achados
+nem plano, e não desvincula uma denúncia já vinculada — só quem abre e liga o dossiê à denúncia que
+o originou.
+
 ## O protótipo original
 
 O protótipo (Cloudflare Workers + D1 + R2, construído no ChatGPT Sites) continua intacto em
@@ -212,6 +218,7 @@ Aplicadas via MCP do Supabase, em ordem. `supabase migration list` no projeto
 | 034 | `organizations_cnpj_check` passa a aceitar CPF (11 dígitos) além de CNPJ/CAEPF (14) no documento da empresa-cliente; nova coluna `organizations.address` (texto livre) |
 | 035 | Todo vínculo com a organização "Sentinela" passa a ser espelhado automaticamente em toda organização-cliente (mesmo papel/situação) — `app.seed_org_members_from_sentinela()` (organização nova) e `app.mirror_sentinela_member()` (entra/sai/muda de papel na Sentinela), mais backfill único para as organizações já existentes |
 | 036 | Remove `organizations_cnpj_check` — documentos reais de cliente (CPF/CNPJ/CAEPF e variações) continuavam sendo recusados mesmo com a regra mais permissiva da 034; o campo aceita qualquer valor agora (a UNIQUE de documento continua) |
+| 037 | `inv_insert` passa a aceitar também o papel Triagem (antes só admin/investigador) — Triagem pode abrir uma investigação a partir de uma denúncia; `inv_reports_insert` ganha a mesma exceção (só para vincular a denúncia de origem), sem tocar em `app.inv_writable()` — as outras quatro tabelas-filhas (equipe, entrevistas, achados, plano) e o desvincular continuam só admin/investigador |
 
 ### Cadastrar uma empresa-cliente nova
 

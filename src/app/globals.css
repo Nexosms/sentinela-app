@@ -317,3 +317,11 @@ form.inbox-tools{align-items:center;flex-wrap:wrap}
   /* A URL depois do link é ruído num documento que já traz o recorte no topo. */
   a[href]:after{content:"" !important}
 }
+
+/* ── abrir investigação a partir do caso ─────────────────────────────────────
+   Novo link em `.case-actions` (CaseControls.tsx) — é um <a>, não um <form>
+   com <button> como os demais botões da barra, então não herda
+   `.case-actions form>button`. Mesmo visual, seletor de filho direto. */
+.case-actions>a{display:inline-flex;align-items:center;justify-content:center;min-height:44px;padding:0 12px;color:inherit;background:white;border:1px solid #d9e0dc;border-radius:7px;font-size:11px;text-decoration:none;cursor:pointer}
+.case-actions>a:hover{border-color:var(--teal)}
+.case-actions-hint{display:block;margin-top:8px;color:var(--muted);font-size:10px;line-height:1.5;text-align:right}

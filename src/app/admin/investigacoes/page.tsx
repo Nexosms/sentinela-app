@@ -9,17 +9,25 @@ import {
 } from "@/components/admin/investigacoes/InvestigationControls";
 import { getStaffContext } from "@/lib/org/context";
 import { createClient } from "@/lib/supabase/server";
-import { parseInvestigationFilters, type SearchParams } from "@/lib/admin/investigacoes";
+import { UUID, parseInvestigationFilters, type SearchParams } from "@/lib/admin/investigacoes";
 
 export const metadata: Metadata = { title: "Investigações" };
 
 export default async function Page({ searchParams }: { searchParams: Promise<SearchParams> }) {
-  const filters = parseInvestigationFilters(await searchParams);
+  const params = await searchParams;
+  const filters = parseInvestigationFilters(params);
   const staff = await getStaffContext();
 
-  // `triagem` e `comite` leem e não escrevem — a policy `inv_insert` só aceita
-  // admin e investigador. O papel aqui esconde o formulário; quem recusa é ela.
-  const canOpen = staff.role === "admin" || staff.role === "investigador";
+  // `comite` lê e não escreve — a policy `inv_insert` (migração 037) aceita
+  // admin, investigador e triagem. O papel aqui esconde o formulário; quem
+  // recusa é a RLS.
+  const canOpen =
+    staff.role === "admin" || staff.role === "investigador" || staff.role === "triagem";
+
+  // Veio de um botão "Abrir investigação" na tela da denúncia
+  // (CaseControls.tsx): pré-seleciona essa denúncia no formulário abaixo.
+  const relatoParam = params.relato;
+  const relatoId = typeof relatoParam === "string" && UUID.test(relatoParam) ? relatoParam : null;
 
   const supabase = await createClient();
   // As denúncias vêm sob a RLS da caixa de entrada: só aparece o que a pessoa
@@ -43,6 +51,19 @@ export default async function Page({ searchParams }: { searchParams: Promise<Sea
     protocol: report.protocol,
     status: report.status,
   }));
+
+  // A pré-seleção pode apontar para uma denúncia fora dos 200 relatos mais
+  // recentes já buscados acima — sem isto, o `<select>` receberia um id
+  // pré-selecionado que não está entre as opções.
+  if (canOpen && relatoId && !reports.some(report => report.id === relatoId)) {
+    const { data: extra } = await supabase
+      .from("reports")
+      .select("id, protocol, status")
+      .eq("id", relatoId)
+      .maybeSingle();
+    if (extra) reports.unshift({ id: extra.id, protocol: extra.protocol, status: extra.status });
+  }
+
   const people: Person[] = (memberRows ?? []).map(row => ({
     user_id: row.user_id,
     name: row.profiles?.full_name ?? "Membro sem nome",
@@ -65,7 +86,12 @@ export default async function Page({ searchParams }: { searchParams: Promise<Sea
               </p>
             </div>
             {canOpen ? (
-              <NovaInvestigacaoForm reports={reports} people={people} selfId={staff.userId} />
+              <NovaInvestigacaoForm
+                reports={reports}
+                people={people}
+                selfId={staff.userId}
+                preselectedReportId={relatoId ?? undefined}
+              />
             ) : null}
           </section>
         }

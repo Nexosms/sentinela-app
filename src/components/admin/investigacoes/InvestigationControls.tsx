@@ -96,13 +96,17 @@ export function NovaInvestigacaoForm({
   reports,
   people,
   selfId,
+  preselectedReportId,
 }: {
   reports: ReportOption[];
   people: Person[];
   selfId: string;
+  /** Veio de um "Abrir investigação" clicado na própria tela da denúncia. */
+  preselectedReportId?: string;
 }) {
   const [state, action, pending] = useActionState(criarInvestigacao, EMPTY);
   const eco = state.enviado ?? {};
+  const preselected = eco.report_id ? undefined : reports.find(r => r.id === preselectedReportId);
 
   return (
     <div className="message-box">
@@ -114,11 +118,21 @@ export function NovaInvestigacaoForm({
         </div>
       </div>
 
+      {preselected ? (
+        <div className="care-note">
+          <span>⚖</span>
+          <div>
+            <strong>Abrindo a partir de uma denúncia</strong>
+            <small>Protocolo {preselected.protocol}, já selecionado abaixo.</small>
+          </div>
+        </div>
+      ) : null}
+
       <form action={action}>
         <div className="field-grid two" key={ecoKey(eco, "report_id", "lead_id")}>
           <label>
             Denúncia de origem
-            <select name="report_id" defaultValue={eco.report_id ?? ""}>
+            <select name="report_id" defaultValue={eco.report_id ?? preselectedReportId ?? ""}>
               <option value="">Sem denúncia vinculada</option>
               {reports.map(report => (
                 <option key={report.id} value={report.id}>

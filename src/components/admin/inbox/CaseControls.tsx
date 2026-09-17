@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { useActionState } from "react";
 
 import {
@@ -13,6 +14,7 @@ import {
 } from "@/app/admin/denuncias/[id]/actions";
 import { RISK_LABEL, RISK_ORDER, STATUS_LABEL, STATUS_ORDER } from "@/lib/admin/labels";
 import type { ReportStatus, RiskLevel } from "@/lib/admin/labels";
+import { INVESTIGATION_PATH } from "@/lib/admin/investigacoes";
 
 /**
  * As folhas interativas do detalhe do caso. São client components pelo
@@ -178,9 +180,16 @@ export function CaseActionsBar({
           <input type="hidden" name="id" value={id} />
           <input type="hidden" name="status" value="em_apuracao" />
           <button type="submit" className="primary-button" disabled={triando}>
-            {triando ? "Iniciando…" : "Iniciar triagem"} <span>→</span>
+            {triando ? "Iniciando…" : "Iniciar apuração"} <span>→</span>
           </button>
         </form>
+
+        {/* Leva ao formulário de abertura em /admin/investigacoes, com esta
+            denúncia já selecionada. Aparece para todo mundo que chega até
+            aqui (a barra inteira já só existe quando `canMutate`, e depois
+            da migração 037 esses são exatamente os papéis que a RLS
+            `inv_insert` aceita — admin, investigador e triagem). */}
+        <Link href={`${INVESTIGATION_PATH}?relato=${id}`}>Abrir investigação</Link>
       </div>
 
       {erros.map(erro => (
@@ -188,6 +197,13 @@ export function CaseActionsBar({
           {erro}
         </span>
       ))}
+
+      {/* "Iniciar apuração" só muda o status deste relato — não cria nada em
+          Investigações, que é um dossiê separado (equipe, plano, achados). */}
+      <small className="case-actions-hint">
+        Mudar o status para &ldquo;Em apuração&rdquo; não abre uma investigação formal — para
+        reunir equipe, prazos e achados, use &ldquo;Abrir investigação&rdquo;.
+      </small>
     </>
   );
 }
