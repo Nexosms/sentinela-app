@@ -2,6 +2,7 @@ import type { ReactNode } from "react";
 import Link from "next/link";
 
 import { createClient } from "@/lib/supabase/server";
+import { getStaffContext } from "@/lib/org/context";
 import Pager from "@/components/admin/shell/Pager";
 import { formatDateOnly, isPastDue, todayInSaoPaulo } from "@/lib/admin/labels";
 import {
@@ -43,15 +44,19 @@ export default async function PlanShell({
   detail: ReactNode;
 }) {
   const supabase = await createClient();
+  const staff = await getStaffContext();
 
-  // Tudo sob RLS: `plans_read` já limita à organização.
+  // `plans_read` autoriza por TODO vínculo ativo, não só a organização
+  // "ativa" no seletor — o filtro explícito evita misturar planos de
+  // clientes diferentes desde que a Sentinela ganhou vínculo em todos.
   let query = supabase
     .from("action_plans")
     .select(
       `id, code, title, status, risk_source, owner_id, due_on, created_at,
        profiles!action_plans_owner_id_fkey(full_name)`,
       { count: "exact" },
-    );
+    )
+    .eq("org_id", staff.orgId);
 
   if (filters.status) query = query.eq("status", filters.status);
   if (filters.origem) query = query.eq("risk_source", filters.origem);
@@ -91,6 +96,7 @@ export default async function PlanShell({
   const { data: members } = await supabase
     .from("org_members")
     .select("user_id, profiles!org_members_user_id_fkey(full_name)")
+    .eq("org_id", staff.orgId)
     .eq("status", "active");
 
   const total = count ?? 0;

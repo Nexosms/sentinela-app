@@ -55,7 +55,7 @@ import {
  * que todo mundo pula e todo auditor pergunta.
  */
 
-async function loadPlan(id: string) {
+async function loadPlan(id: string, orgId: string) {
   const supabase = await createClient();
   const { data } = await supabase
     .from("action_plans")
@@ -67,6 +67,10 @@ async function loadPlan(id: string) {
        investigations(code, status)`,
     )
     .eq("id", id)
+    // `plans_read` autoriza por TODO vínculo ativo, não só a organização
+    // "ativa" no seletor — este filtro evita abrir um plano de outro
+    // cliente pelo id.
+    .eq("org_id", orgId)
     .maybeSingle();
   return data;
 }
@@ -199,11 +203,13 @@ export default async function PlanDetail({
   id: string;
   filters: PlanFilters;
 }) {
-  // Sem RLS que autorize, isto volta vazio. É a única checagem de acesso, e é a certa.
-  const plan = await loadPlan(id);
+  const staff = await getStaffContext();
+
+  // Sem RLS que autorize, isto volta vazio. É a única checagem de acesso, e é a certa
+  // (mais o filtro de organização em `loadPlan`).
+  const plan = await loadPlan(id, staff.orgId);
   if (!plan) notFound();
 
-  const staff = await getStaffContext();
   // Papel aqui só esconde controle: `comite` e `triagem` leem e não escrevem.
   // Quem recusa a escrita são `plans_update` e `measures_update`.
   const editable = staff.role === "admin" || staff.role === "investigador";

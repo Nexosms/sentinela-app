@@ -2,6 +2,7 @@ import type { ReactNode } from "react";
 import Link from "next/link";
 
 import { createClient } from "@/lib/supabase/server";
+import { getStaffContext } from "@/lib/org/context";
 import Pager from "@/components/admin/shell/Pager";
 import {
   INVESTIGATION_PATH,
@@ -57,15 +58,20 @@ export default async function InvestigationShell({
   detail: ReactNode;
 }) {
   const supabase = await createClient();
+  const staff = await getStaffContext();
 
-  // Tudo sob RLS: `inv_read` já limita à organização e aos papéis que podem ver.
+  // `inv_read` autoriza por TODO vínculo ativo da pessoa, não só a
+  // organização "ativa" no seletor — desde que a Sentinela ganhou vínculo
+  // automático em todo cliente (Parte 16), o filtro explícito é o que evita
+  // misturar investigações de organizações diferentes.
   let query = supabase
     .from("investigations")
     .select(
       `id, code, status, scope, planned_end, reviewed_at, findings, recommendation, outcome,
        lead_id, created_at, profiles!investigations_lead_id_fkey(full_name)`,
       { count: "exact" },
-    );
+    )
+    .eq("org_id", staff.orgId);
 
   if (filters.status) query = query.eq("status", filters.status);
   if (filters.responsavel === NO_LEAD) query = query.is("lead_id", null);
@@ -83,6 +89,7 @@ export default async function InvestigationShell({
   const { data: members } = await supabase
     .from("org_members")
     .select("user_id, profiles!org_members_user_id_fkey(full_name)")
+    .eq("org_id", staff.orgId)
     .eq("status", "active");
 
   const total = count ?? 0;

@@ -2,6 +2,8 @@ import type { ReactNode } from "react";
 import Link from "next/link";
 
 import { createClient } from "@/lib/supabase/server";
+import { getStaffContext } from "@/lib/org/context";
+import { publicEnv } from "@/lib/env";
 import {
   RISK_LABEL,
   RISK_ORDER,
@@ -62,14 +64,26 @@ export default async function InboxShell({
   detail: ReactNode;
 }) {
   const supabase = await createClient();
+  const staff = await getStaffContext();
 
-  // Tudo sob RLS: o investigador só enxerga o que lhe foi atribuído.
+  // Com o Sentinela ativo, a tela agrega toda empresa-cliente (a Parte 16
+  // já deu vínculo automático em todas); com qualquer outra organização
+  // ativa, filtra explicitamente por ela — sem isso, a RLS (que autoriza
+  // por TODO vínculo ativo da pessoa, não só o "ativo" no seletor) deixaria
+  // vazar denúncias de outros clientes mesmo fora do modo agregado.
+  const agregando = staff.orgSlug === publicEnv.defaultOrgSlug;
+
+  // Sempre inclui `organizations(trade_name)` (barato, é só um embed) — só
+  // é usado na tela quando `agregando`, mas assim a consulta tem um único
+  // formato de `select`, sem depender de dois tipos diferentes de linha.
   let query = supabase
     .from("reports")
     .select(
-      "id, protocol, status, risk, created_at, due_at, retaliation, urgent, assigned_to, org_units(name), report_categories(is_primary, categories(label_pt))",
+      "id, protocol, status, risk, created_at, due_at, retaliation, urgent, assigned_to, org_units(name), organizations(trade_name), report_categories(is_primary, categories(label_pt))",
       { count: "exact" },
     );
+
+  if (!agregando) query = query.eq("org_id", staff.orgId);
 
   // "Arquivadas" é a única caixa que mostra `arquivada` — em "Ativas" ela
   // nunca aparece, mesmo que um filtro de status antigo ainda esteja na URL.
@@ -80,9 +94,9 @@ export default async function InboxShell({
     if (filters.status) query = query.eq("status", filters.status);
   }
   if (filters.risk) query = query.eq("risk", filters.risk);
-  if (filters.unidade) query = query.eq("org_unit_id", filters.unidade);
-  if (filters.responsavel === UNASSIGNED) query = query.is("assigned_to", null);
-  else if (filters.responsavel) query = query.eq("assigned_to", filters.responsavel);
+  if (!agregando && filters.unidade) query = query.eq("org_unit_id", filters.unidade);
+  if (!agregando && filters.responsavel === UNASSIGNED) query = query.is("assigned_to", null);
+  else if (!agregando && filters.responsavel) query = query.eq("assigned_to", filters.responsavel);
 
   if (filters.q) {
     if (looksLikeProtocol(filters.q)) {
@@ -102,13 +116,21 @@ export default async function InboxShell({
     .order("created_at", { ascending: false })
     .range(from, from + PAGE_SIZE - 1);
 
-  const [{ data: units }, { data: members }] = await Promise.all([
-    supabase.from("org_units").select("id, name").eq("is_active", true).order("sort_order"),
-    supabase
-      .from("org_members")
-      .select("user_id, profiles!org_members_user_id_fkey(full_name)")
-      .eq("status", "active"),
-  ]);
+  // Unidade/Responsável são conceitos de UMA organização — não fazem
+  // sentido como filtro quando a lista já mistura várias empresas.
+  let units: { id: string; name: string }[] | null = null;
+  let members: { user_id: string; profiles: { full_name: string | null } | null }[] | null = null;
+  if (!agregando) {
+    const [unidadesRes, membrosRes] = await Promise.all([
+      supabase.from("org_units").select("id, name").eq("is_active", true).order("sort_order"),
+      supabase
+        .from("org_members")
+        .select("user_id, profiles!org_members_user_id_fkey(full_name)")
+        .eq("status", "active"),
+    ]);
+    units = unidadesRes.data;
+    members = membrosRes.data;
+  }
 
   const total = count ?? 0;
   const pages = Math.max(1, Math.ceil(total / PAGE_SIZE));
@@ -165,27 +187,31 @@ export default async function InboxShell({
               </option>
             ))}
           </select>
-          <select name="unidade" defaultValue={filters.unidade} aria-label="Filtrar por unidade">
-            <option value="">Todas as unidades</option>
-            {(units ?? []).map(unit => (
-              <option key={unit.id} value={unit.id}>
-                {unit.name}
-              </option>
-            ))}
-          </select>
-          <select
-            name="responsavel"
-            defaultValue={filters.responsavel}
-            aria-label="Filtrar por responsável"
-          >
-            <option value="">Todos os responsáveis</option>
-            <option value={UNASSIGNED}>Sem responsável</option>
-            {(members ?? []).map(member => (
-              <option key={member.user_id} value={member.user_id}>
-                {member.profiles?.full_name ?? member.user_id}
-              </option>
-            ))}
-          </select>
+          {agregando ? null : (
+            <>
+              <select name="unidade" defaultValue={filters.unidade} aria-label="Filtrar por unidade">
+                <option value="">Todas as unidades</option>
+                {(units ?? []).map(unit => (
+                  <option key={unit.id} value={unit.id}>
+                    {unit.name}
+                  </option>
+                ))}
+              </select>
+              <select
+                name="responsavel"
+                defaultValue={filters.responsavel}
+                aria-label="Filtrar por responsável"
+              >
+                <option value="">Todos os responsáveis</option>
+                <option value={UNASSIGNED}>Sem responsável</option>
+                {(members ?? []).map(member => (
+                  <option key={member.user_id} value={member.user_id}>
+                    {member.profiles?.full_name ?? member.user_id}
+                  </option>
+                ))}
+              </select>
+            </>
+          )}
         </div>
         <button type="submit">
           Filtros{filterCount > 0 ? <b>{filterCount}</b> : null}
@@ -220,7 +246,11 @@ export default async function InboxShell({
               </div>
               <strong>{primaryCategory(item.report_categories)}</strong>
               <small>
-                {item.org_units?.name ? `${item.org_units.name} · ` : ""}
+                {agregando && item.organizations
+                  ? `${item.organizations.trade_name}${item.org_units?.name ? ` · ${item.org_units.name}` : ""} · `
+                  : item.org_units?.name
+                    ? `${item.org_units.name} · `
+                    : ""}
                 {relativeAge(item.created_at)}
               </small>
               {item.status === "arquivada" ? null : (

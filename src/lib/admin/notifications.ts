@@ -2,6 +2,7 @@ import "server-only";
 
 import { cache } from "react";
 import { createClient } from "@/lib/supabase/server";
+import { getStaffContext } from "@/lib/org/context";
 import type { Database } from "@/lib/supabase/database.types";
 import { INVESTIGATION_PATH } from "@/lib/admin/investigacoes";
 import { PLAN_PATH } from "@/lib/admin/planos";
@@ -14,19 +15,26 @@ export type Notification = Pick<
 /**
  * Notificações não lidas do usuário.
  *
- * Não há filtro de destinatário aqui de propósito: a policy de SELECT já
+ * Não há filtro de DESTINATÁRIO aqui de propósito: a policy de SELECT já
  * entrega exatamente as minhas (`user_id = auth.uid()`) e as do meu papel
  * (`user_id is null` e o papel em `target_roles`). Repetir isso em JS seria uma
  * segunda autorização para sair de sincronia com a primeira.
+ *
+ * O filtro de ORGANIZAÇÃO é outra coisa: a RLS autoriza por TODO vínculo
+ * ativo da pessoa, não só a organização "ativa" no seletor — desde que a
+ * Sentinela ganhou vínculo automático em todo cliente, sem este filtro o
+ * sino misturaria avisos de organizações diferentes.
  *
  * `cache` deduplica dentro da requisição: o topbar de cada página e a própria
  * página de notificações compartilham uma consulta só.
  */
 export const countUnreadNotifications = cache(async (): Promise<number> => {
+  const staff = await getStaffContext();
   const supabase = await createClient();
   const { count, error } = await supabase
     .from("notifications")
     .select("id", { count: "exact", head: true })
+    .eq("org_id", staff.orgId)
     .is("read_at", null);
 
   if (error) {
@@ -39,10 +47,12 @@ export const countUnreadNotifications = cache(async (): Promise<number> => {
 
 /** Últimas notificações visíveis ao usuário, não lidas primeiro. */
 export const listNotifications = cache(async (limit = 50): Promise<Notification[]> => {
+  const staff = await getStaffContext();
   const supabase = await createClient();
   const { data, error } = await supabase
     .from("notifications")
     .select("id, kind, title, body, report_id, entity_type, entity_id, read_at, created_at")
+    .eq("org_id", staff.orgId)
     .order("read_at", { ascending: true, nullsFirst: true })
     .order("created_at", { ascending: false })
     .limit(limit);

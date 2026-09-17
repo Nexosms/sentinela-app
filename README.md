@@ -247,6 +247,22 @@ cliente precisar de um ajuste que só vale PARA ELE (ex.: esconder uma aba
 específica), use Configurações → "Time e permissões" **daquela
 organização** — isso não muda o vínculo em si, só o que aparece no menu.
 
+**Toda consulta de tela filtra por organização explicitamente — não confie
+só na RLS para isolar clientes.** A RLS (`current_org_ids()`) autoriza por
+TODO vínculo ativo da pessoa, não só a organização "ativa" no seletor da
+sidebar. Antes da migração 035 isso era inofensivo (uma pessoa, uma
+organização); agora que a Sentinela tem vínculo em todo cliente, uma
+consulta sem `.eq("org_id", staff.orgId)` mistura denúncias/investigações/
+planos/notificações de **todos** os clientes — confirmei isso rodando a
+consulta de verdade sob RLS, como um membro real da Sentinela, sem filtro
+(vazou dois clientes juntos) e com filtro (isolou certo). Toda tela nova
+que ler `reports`/`investigations`/`action_plans`/`notifications` precisa
+desse filtro explícito — é fácil esquecer, porque o banco deixa passar.
+A única exceção deliberada é a lista de Denúncias quando a organização
+ativa é a própria Sentinela: aí a consulta **não** filtra por organização
+de propósito (mostra todo cliente, identificado pelo nome da empresa) —
+ver `agregando` em `InboxShell.tsx`/`CaseDetail.tsx`.
+
 **Remover uma empresa-cliente**: não existe DELETE — mesma regra já usada
 em unidades e categorias (`is_active`, nunca apagar a linha): cada evento
 de auditoria da empresa aponta para ela, e `audit_events` é imutável por

@@ -4,6 +4,7 @@ import { notFound } from "next/navigation";
 
 import { createClient } from "@/lib/supabase/server";
 import { getStaffContext } from "@/lib/org/context";
+import { publicEnv } from "@/lib/env";
 import {
   MODE_LABEL,
   RISK_LABEL,
@@ -65,21 +66,32 @@ function periodOf(report: {
 
 export default async function CaseDetail({ id, filters }: { id: string; filters: InboxFilters }) {
   const supabase = await createClient();
+  const staff = await getStaffContext();
+
+  // Com o Sentinela ativo, qualquer relato de qualquer cliente pode ser
+  // aberto por id (a lista já agrega todos); com outra organização ativa,
+  // o filtro por `org_id` garante que um id de outro cliente vira "não
+  // encontrado" em vez de abrir — sem isso, a RLS (que autoriza por TODO
+  // vínculo ativo, não só o "ativo" no seletor) deixaria vazar.
+  const agregando = staff.orgSlug === publicEnv.defaultOrgSlug;
 
   // Sem RLS que autorize, isto volta vazio — inclusive para o investigador sem
-  // atribuição. É a única checagem de acesso que existe, e é a certa.
-  const { data: report } = await supabase
+  // atribuição. É a única checagem de acesso que existe, e é a certa (mais o
+  // filtro de organização acima, quando não agregando).
+  let reportQuery = supabase
     .from("reports")
     .select(
-      `id, protocol, status, risk, risk_rationale, mode, description, witnesses, location,
+      `id, org_id, protocol, status, risk, risk_rationale, mode, description, witnesses, location,
        period_text, occurred_from, occurred_to, recurrence, city, relationship,
        category_specification, due_at, created_at, retaliation, urgent, assigned_to, unit_unknown,
        org_units(name),
+       organizations(trade_name),
        profiles!reports_assigned_to_fkey(full_name),
        report_categories(is_primary, categories(label_pt))`,
     )
-    .eq("id", id)
-    .maybeSingle();
+    .eq("id", id);
+  if (!agregando) reportQuery = reportQuery.eq("org_id", staff.orgId);
+  const { data: report } = await reportQuery.maybeSingle();
 
   if (!report) notFound();
 
@@ -88,7 +100,6 @@ export default async function CaseDetail({ id, filters }: { id: string; filters:
     .select("id", { count: "exact", head: true })
     .eq("report_id", id);
 
-  const staff = await getStaffContext();
   // O papel aqui só esconde controle. `comite` é somente leitura — a RLS nem
   // deixa esse papel ver o relato — e a designação e a quebra de sigilo são de
   // `admin`. Quem autoriza de verdade continua sendo a política do Postgres.
@@ -97,9 +108,13 @@ export default async function CaseDetail({ id, filters }: { id: string; filters:
 
   let members: Member[] = [];
   if (canAssign) {
+    // Escopo pela organização DONA do relato — não pela organização ativa no
+    // seletor: no modo agregado, atribuir precisa listar o time do cliente
+    // certo, não o do Sentinela.
     const { data: memberRows } = await supabase
       .from("org_members")
       .select("user_id, profiles!org_members_user_id_fkey(full_name)")
+      .eq("org_id", report.org_id)
       .eq("status", "active");
     members = (memberRows ?? []).map(row => ({
       user_id: row.user_id,
@@ -116,12 +131,10 @@ export default async function CaseDetail({ id, filters }: { id: string; filters:
     report.report_categories?.find(row => row.is_primary)?.categories?.label_pt ??
     categories[0] ??
     "Relato sem categoria";
-  // Cada empresa-cliente é a própria organização (não mais "unidades" dentro
-  // de uma organização única) — `staff.orgName` já é a empresa deste relato,
-  // sem precisar de outra consulta. Unidade só aparece quando existir de
-  // verdade (organizações que ainda usam `org_units` internamente, ou
-  // relatos antigos, de antes desta mudança).
-  const empresa = staff.orgName;
+  // A empresa vem do relato de verdade (`report.organizations`), nunca da
+  // organização ativa no seletor — no modo agregado elas quase sempre
+  // divergem, e mesmo fora dele é mais correto depender do dado real.
+  const empresa = report.organizations?.trade_name ?? staff.orgName;
   const unidade = report.org_units?.name;
   const identificacao = unidade ? `${empresa} · ${unidade}` : empresa;
   const overdue = isOverdue(report.due_at);

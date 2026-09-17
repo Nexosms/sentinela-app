@@ -1,5 +1,6 @@
 import { createClient, getAuthenticatedUser } from "@/lib/supabase/server";
 import { getStaffContext } from "@/lib/org/context";
+import { publicEnv } from "@/lib/env";
 import {
   MODE_LABEL,
   RISK_LABEL,
@@ -93,16 +94,24 @@ export async function GET(request: Request): Promise<Response> {
   const filtros = parseFiltros(new URL(request.url));
   const supabase = await createClient();
 
+  // Mesma regra da tela (InboxShell): com o Sentinela ativo, exporta de
+  // todo cliente, identificado por empresa; do contrário, só da organização
+  // ativa — sem isso, a RLS deixaria vazar outros clientes no CSV.
+  const agregando = staff.orgSlug === publicEnv.defaultOrgSlug;
+
   let query = supabase
     .from("reports")
     .select(
       `id, protocol, status, risk, mode, created_at, due_at, closed_at,
        org_units(name),
+       organizations(trade_name),
        profiles!reports_assigned_to_fkey(full_name),
        report_categories(categories(label_pt))`,
     )
     .order("created_at", { ascending: false })
     .limit(5000);
+
+  if (!agregando) query = query.eq("org_id", staff.orgId);
 
   // Mesma regra da tela: "Arquivadas" só mostra arquivada; "Ativas" nunca mostra.
   if (filtros.caixa === "arquivadas") {
@@ -112,10 +121,12 @@ export async function GET(request: Request): Promise<Response> {
     if (filtros.status.length > 0) query = query.in("status", filtros.status);
   }
   if (filtros.risk.length > 0) query = query.in("risk", filtros.risk);
-  if (filtros.unidade === "nenhum") query = query.is("org_unit_id", null);
-  else if (filtros.unidade) query = query.eq("org_unit_id", filtros.unidade);
-  if (filtros.responsavel === "nenhum") query = query.is("assigned_to", null);
-  else if (filtros.responsavel) query = query.eq("assigned_to", filtros.responsavel);
+  if (!agregando) {
+    if (filtros.unidade === "nenhum") query = query.is("org_unit_id", null);
+    else if (filtros.unidade) query = query.eq("org_unit_id", filtros.unidade);
+    if (filtros.responsavel === "nenhum") query = query.is("assigned_to", null);
+    else if (filtros.responsavel) query = query.eq("assigned_to", filtros.responsavel);
+  }
   // A busca livre olha o corpo do relato, mas o corpo não vai para o arquivo:
   // filtrar por um texto não é o mesmo que exportá-lo.
   if (filtros.q) {
@@ -131,6 +142,7 @@ export async function GET(request: Request): Promise<Response> {
 
   const linhas = data ?? [];
   const header = [
+    ...(agregando ? ["Empresa"] : []),
     "Protocolo",
     "Status",
     "Risco",
@@ -147,6 +159,7 @@ export async function GET(request: Request): Promise<Response> {
     header.map(cell).join(";"),
     ...linhas.map(r =>
       [
+        ...(agregando ? [cell(r.organizations?.trade_name ?? "—")] : []),
         cell(r.protocol),
         cell(STATUS_LABEL[r.status]),
         cell(RISK_LABEL[r.risk]),

@@ -20,19 +20,28 @@ export default async function AdminOverview() {
   const staff = await getStaffContext();
   const supabase = await createClient();
 
-  // Tudo sob RLS: cada papel conta apenas o que enxerga.
+  // Escopo explícito pela organização ativa: a RLS sozinha autoriza por TODO
+  // vínculo ativo da pessoa (não só o "ativo" no seletor), e desde que a
+  // equipe da Sentinela ganhou vínculo automático em todo cliente, sem este
+  // filtro os números aqui misturariam todas as empresas.
   const [abertos, triagem, criticos, total] = await Promise.all([
     supabase.from("reports").select("id", { count: "exact", head: true })
+      .eq("org_id", staff.orgId)
       .not("status", "in", "(concluida,arquivada)"),
-    supabase.from("reports").select("id", { count: "exact", head: true }).eq("status", "em_triagem"),
-    supabase.from("reports").select("id", { count: "exact", head: true }).eq("risk", "critico")
+    supabase.from("reports").select("id", { count: "exact", head: true })
+      .eq("org_id", staff.orgId)
+      .eq("status", "em_triagem"),
+    supabase.from("reports").select("id", { count: "exact", head: true })
+      .eq("org_id", staff.orgId)
+      .eq("risk", "critico")
       .not("status", "in", "(concluida,arquivada)"),
-    supabase.from("reports").select("id", { count: "exact", head: true }),
+    supabase.from("reports").select("id", { count: "exact", head: true }).eq("org_id", staff.orgId),
   ]);
 
   const { data: recentes } = await supabase
     .from("reports")
     .select("id, protocol, status, risk, created_at")
+    .eq("org_id", staff.orgId)
     .order("created_at", { ascending: false })
     .limit(3);
 

@@ -57,7 +57,7 @@ function todayInSaoPaulo(): string {
  * relerem a investigação inteira. O tipo `Investigation` sai daqui, então
  * mudar o `select` reflete nas abas sem `any` no meio.
  */
-async function loadInvestigation(id: string) {
+async function loadInvestigation(id: string, orgId: string) {
   const supabase = await createClient();
   const { data } = await supabase
     .from("investigations")
@@ -69,6 +69,10 @@ async function loadInvestigation(id: string) {
        reviewer:profiles!investigations_reviewed_by_fkey(full_name)`,
     )
     .eq("id", id)
+    // `inv_read` autoriza por TODO vínculo ativo, não só a organização
+    // "ativa" no seletor — este filtro evita abrir uma investigação de
+    // outro cliente pelo id.
+    .eq("org_id", orgId)
     .maybeSingle();
   return data;
 }
@@ -83,12 +87,12 @@ export default async function InvestigationDetail({
   filters: InvestigationFilters;
 }) {
   const supabase = await createClient();
-
-  // Sem RLS que autorize, isto volta vazio. É a única checagem de acesso, e é a certa.
-  const inv = await loadInvestigation(id);
-  if (!inv) notFound();
-
   const staff = await getStaffContext();
+
+  // Sem RLS que autorize, isto volta vazio. É a única checagem de acesso, e é a certa
+  // (mais o filtro de organização em `loadInvestigation`).
+  const inv = await loadInvestigation(id, staff.orgId);
+  if (!inv) notFound();
 
   // Papel aqui só esconde controle. `triagem` e `comite` leem e não escrevem;
   // quem recusa a escrita é a policy `inv_update`.
