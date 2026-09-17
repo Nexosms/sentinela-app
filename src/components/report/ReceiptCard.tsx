@@ -14,25 +14,54 @@ import type { Receipt } from "./wizardState";
 export default function ReceiptCard({ receipt }: { receipt: Receipt }) {
   const router = useRouter();
 
-  function downloadReceipt() {
-    const safeReceipt = [
-      "SENTINELA — CANAL DE DENÚNCIAS",
-      "Comprovante de acompanhamento",
-      "",
-      `Protocolo: ${receipt.protocol}`,
-      `Chave de acompanhamento: ${receipt.secret}`,
-      `Data de emissão: ${new Date().toLocaleString("pt-BR")}`,
-      "Status inicial: Relato recebido",
-      `Acompanhamento: ${location.origin}/acompanhar`,
-      "",
-      "Este comprovante não contém o conteúdo sensível do relato. Guarde-o em local seguro.",
-    ].join("\n");
-    const url = URL.createObjectURL(new Blob([safeReceipt], { type: "text/plain;charset=utf-8" }));
-    const link = document.createElement("a");
-    link.href = url;
-    link.download = `protocolo-sentinela-${receipt.protocol}.txt`;
-    link.click();
-    URL.revokeObjectURL(url);
+  async function downloadReceipt() {
+    // PDF, não .txt: o comprovante é para o denunciante guardar/imprimir, e um
+    // arquivo de texto puro abre em qualquer editor e perde a formatação — o
+    // pedido explícito foi por um PDF de verdade.
+    const { jsPDF } = await import("jspdf");
+    const doc = new jsPDF({ unit: "pt", format: "a4" });
+    const margin = 56;
+    let y = margin;
+
+    doc.setFont("helvetica", "bold");
+    doc.setFontSize(16);
+    // Hífen simples, não travessão "—": a fonte padrão do jsPDF (Helvetica) não
+    // tem esse glifo e o descarta silenciosamente do PDF gerado.
+    doc.text("SENTINELA - CANAL DE DENÚNCIAS", margin, y);
+    y += 22;
+    doc.setFontSize(12);
+    doc.text("Comprovante de acompanhamento", margin, y);
+    y += 32;
+
+    function field(label: string, value: string) {
+      doc.setFont("helvetica", "bold");
+      doc.setFontSize(10);
+      doc.text(label, margin, y);
+      y += 16;
+      doc.setFont("helvetica", "normal");
+      doc.setFontSize(13);
+      doc.text(value, margin, y);
+      y += 28;
+    }
+
+    field("PROTOCOLO", receipt.protocol);
+    field("CHAVE DE ACOMPANHAMENTO", receipt.secret);
+    field("DATA DE EMISSÃO", new Date().toLocaleString("pt-BR"));
+    field("STATUS INICIAL", "Relato recebido");
+    field("ACOMPANHAMENTO", `${location.origin}/acompanhar`);
+
+    doc.setFont("helvetica", "italic");
+    doc.setFontSize(10);
+    doc.text(
+      doc.splitTextToSize(
+        "Este comprovante não contém o conteúdo sensível do relato. Guarde-o em local seguro.",
+        515,
+      ),
+      margin,
+      y,
+    );
+
+    doc.save(`protocolo-sentinela-${receipt.protocol}.pdf`);
   }
 
   return (
