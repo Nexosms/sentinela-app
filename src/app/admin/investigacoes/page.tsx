@@ -30,12 +30,20 @@ export default async function Page({ searchParams }: { searchParams: Promise<Sea
   const relatoId = typeof relatoParam === "string" && UUID.test(relatoParam) ? relatoParam : null;
 
   const supabase = await createClient();
-  // As denúncias vêm sob a RLS da caixa de entrada: só aparece o que a pessoa
-  // já poderia abrir em /admin/denuncias.
+  // `app.current_org_ids()` devolve TODA organização onde a pessoa tem
+  // vínculo ativo — e, desde a migração 035, todo mundo da Sentinela tem
+  // vínculo em todo cliente. Sem o `.eq("org_id", ...)` explícito, este
+  // `<select>` misturava denúncias de todos os clientes ao mesmo tempo (é
+  // o mesmo vazamento já corrigido em Denúncias/Investigações/Planos na
+  // Parte 18 — só esta consulta específica, do formulário de abertura,
+  // tinha ficado de fora daquela correção). Investigações não tem vista
+  // agregada (decisão da Parte 18): mesmo com o Sentinela ativo, só aparece
+  // denúncia da própria Sentinela aqui.
   const { data: reportRows } = canOpen
     ? await supabase
         .from("reports")
         .select("id, protocol, status")
+        .eq("org_id", staff.orgId)
         .order("created_at", { ascending: false })
         .limit(200)
     : { data: null };
@@ -43,6 +51,7 @@ export default async function Page({ searchParams }: { searchParams: Promise<Sea
     ? await supabase
         .from("org_members")
         .select("user_id, profiles!org_members_user_id_fkey(full_name)")
+        .eq("org_id", staff.orgId)
         .eq("status", "active")
     : { data: null };
 
@@ -54,7 +63,13 @@ export default async function Page({ searchParams }: { searchParams: Promise<Sea
 
   // A pré-seleção pode apontar para uma denúncia fora dos 200 relatos mais
   // recentes já buscados acima — sem isto, o `<select>` receberia um id
-  // pré-selecionado que não está entre as opções.
+  // pré-selecionado que não está entre as opções. Esta busca NÃO filtra por
+  // `staff.orgId` de propósito: o link "Abrir investigação" pode vir de uma
+  // denúncia de outro cliente, vista com o Sentinela agregando (Parte 18) —
+  // é uma busca por um único id já referenciado, não uma listagem, então não
+  // reabre o vazamento acima. (Limite conhecido, não resolvido aqui: a
+  // investigação criada a partir dela ainda registra `org_id: staff.orgId`
+  // em `criarInvestigacao`, não o da denúncia de origem.)
   if (canOpen && relatoId && !reports.some(report => report.id === relatoId)) {
     const { data: extra } = await supabase
       .from("reports")
