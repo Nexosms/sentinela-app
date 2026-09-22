@@ -219,6 +219,7 @@ Aplicadas via MCP do Supabase, em ordem. `supabase migration list` no projeto
 | 035 | Todo vínculo com a organização "Sentinela" passa a ser espelhado automaticamente em toda organização-cliente (mesmo papel/situação) — `app.seed_org_members_from_sentinela()` (organização nova) e `app.mirror_sentinela_member()` (entra/sai/muda de papel na Sentinela), mais backfill único para as organizações já existentes |
 | 036 | Remove `organizations_cnpj_check` — documentos reais de cliente (CPF/CNPJ/CAEPF e variações) continuavam sendo recusados mesmo com a regra mais permissiva da 034; o campo aceita qualquer valor agora (a UNIQUE de documento continua) |
 | 037 | `inv_insert` passa a aceitar também o papel Triagem (antes só admin/investigador) — Triagem pode abrir uma investigação a partir de uma denúncia; `inv_reports_insert` ganha a mesma exceção (só para vincular a denúncia de origem), sem tocar em `app.inv_writable()` — as outras quatro tabelas-filhas (equipe, entrevistas, achados, plano) e o desvincular continuam só admin/investigador |
+| 038 | `get_report_catalog()`: `legal_name`/`cnpj` do "Este canal é operado por..." (Etapa 1 do relato) passam a vir sempre da Sentinela (via `app.sentinela_org_id()`), nunca da empresa-cliente do link — antes, `/relato/<cliente>` mostrava a própria empresa-cliente como operadora do canal dela mesma. `slug`/`name` continuam vindo da organização do link (usados para `orgSlug` e para achar as categorias certas) |
 
 ### Cadastrar uma empresa-cliente nova
 
