@@ -11,6 +11,7 @@ import {
   registrarArquivo,
   salvarAcao,
   salvarReuniao,
+  salvarTranscricao,
   substituirArquivo,
   type ActionState,
 } from "@/app/admin/clientes/[orgId]/portal/actions";
@@ -161,6 +162,53 @@ export function ReuniaoForm({ orgId, meeting }: { orgId: string; meeting?: Meeti
         </label>
         <button type="submit" className="primary-button" disabled={pending}>
           {pending ? "Salvando…" : meeting ? "Salvar reunião" : "Criar reunião"} <span>→</span>
+        </button>
+      </form>
+      <Feedback state={state} />
+    </div>
+  );
+}
+
+// ── Transcrição ─────────────────────────────────────────────────────────────
+
+export function TranscricaoForm({
+  orgId,
+  meetingId,
+  transcript,
+}: {
+  orgId: string;
+  meetingId: string;
+  transcript: string | null;
+}) {
+  const [state, action, pending] = useActionState(salvarTranscricao, EMPTY);
+  const eco = state.enviado ?? {};
+
+  return (
+    <div className="message-box">
+      <div className="message-head">
+        <span>☰</span>
+        <div>
+          <strong>Transcrição</strong>
+          <small>
+            Texto corrido da reunião, mostrado ao cliente na aba Transcrição. Para apagar, salve em
+            branco.
+          </small>
+        </div>
+      </div>
+      <form action={action} key={formKey(state, meetingId)}>
+        <input type="hidden" name="orgId" value={orgId} />
+        <input type="hidden" name="id" value={meetingId} />
+        <label className="wide-field">
+          Texto
+          <textarea
+            name="transcript"
+            rows={16}
+            defaultValue={eco.transcript ?? transcript ?? ""}
+            placeholder="Cole aqui a transcrição da reunião"
+          />
+        </label>
+        <button type="submit" className="primary-button" disabled={pending}>
+          {pending ? "Salvando…" : "Salvar transcrição"} <span>→</span>
         </button>
       </form>
       <Feedback state={state} />

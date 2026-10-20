@@ -283,6 +283,37 @@ export async function excluirReuniao(_prev: ActionState, formData: FormData): Pr
   redirect(portalAdminPath(orgId));
 }
 
+const transcricaoSchema = z.object({
+  transcript: z.string().max(500000, "Transcrição longa demais (máx. 500 mil caracteres)."),
+});
+
+/** Aba Transcrição: texto corrido da reunião. Salvar vazio apaga. */
+export async function salvarTranscricao(_prev: ActionState, formData: FormData): Promise<ActionState> {
+  const orgId = text(formData, "orgId");
+  const id = text(formData, "id");
+  const raw = formData.get("transcript");
+  const eco = { transcript: typeof raw === "string" ? raw : "" };
+
+  const ctx = await exigirNexo(orgId);
+  if ("error" in ctx) return { error: ctx.error, enviado: eco };
+  if (!UUID.safeParse(id).success) return { error: "Reunião inválida.", enviado: eco };
+
+  const parsed = transcricaoSchema.safeParse({ transcript: eco.transcript });
+  if (!parsed.success) return { error: firstIssue(parsed.error), enviado: eco };
+
+  const valor = parsed.data.transcript.trim();
+  const { data, error } = await ctx.supabase
+    .from("portal_meetings")
+    .update({ transcript: valor === "" ? null : valor })
+    .eq("id", id)
+    .eq("org_id", orgId)
+    .select("id");
+  if (error) return { ...fail("salvar transcrição", error.message, "Não foi possível salvar a transcrição."), enviado: eco };
+  if (!data || data.length === 0) return { error: SEM_ALCANCE, enviado: eco };
+  revalidar();
+  return done(valor === "" ? "Transcrição removida." : "Transcrição salva.");
+}
+
 // ── Ações da reunião ────────────────────────────────────────────────────────
 
 const acaoSchema = z.object({

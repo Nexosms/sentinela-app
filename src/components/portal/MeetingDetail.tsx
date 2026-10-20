@@ -1,26 +1,21 @@
-import Link from "next/link";
 import { notFound } from "next/navigation";
 
 import { getStaffContext } from "@/lib/org/context";
 import { createClient } from "@/lib/supabase/server";
-import { formatDateTime } from "@/lib/admin/labels";
 import {
   ACTION_STATUS,
   ACTION_STATUS_LABEL,
   MEETINGS_PATH,
-  MEETING_TABS,
-  meetingStatusClass,
-  meetingStatusLabel,
-  meetingTabHref,
   type MeetingTab,
 } from "@/lib/portal/portal";
-import { ActionItem, EmptyNote, FileCard, Recording } from "./parts";
+import { MeetingHeader, MeetingTabs, PortalPanel } from "./MeetingHeader";
+import { ActionItem, FileCard, Recording } from "./parts";
 
 /**
- * Detalhe de uma reunião para o cliente: resumo, ações, gravação e arquivos.
- * Só leitura. A reunião precisa ser da empresa ativa E estar publicada; ações,
- * gravação e arquivos herdam isso (a RLS esconde os filhos de um rascunho, e o
- * filtro de organização abaixo é a segunda trava).
+ * Página de uma reunião para o cliente: cabeçalho, abas e o painel da aba
+ * aberta. Só leitura. A reunião precisa ser da empresa ativa E estar publicada;
+ * ações, gravação e arquivos herdam isso (a RLS esconde os filhos de um
+ * rascunho, e o filtro de organização abaixo é a segunda trava).
  */
 export default async function MeetingDetail({ id, aba }: { id: string; aba: MeetingTab }) {
   const staff = await getStaffContext();
@@ -28,7 +23,7 @@ export default async function MeetingDetail({ id, aba }: { id: string; aba: Meet
 
   const { data: meeting } = await supabase
     .from("portal_meetings")
-    .select("id, title, meeting_at, participants, status, summary")
+    .select("id, title, meeting_at, participants, status, summary, transcript")
     .eq("id", id)
     .eq("org_id", staff.orgId)
     .eq("is_published", true)
@@ -54,95 +49,91 @@ export default async function MeetingDetail({ id, aba }: { id: string; aba: Meet
   const gravacoes = (files ?? []).filter(file => file.kind === "recording");
   const arquivos = (files ?? []).filter(file => file.kind === "meeting_file");
   const base = `${MEETINGS_PATH}/${id}`;
-  const counts: Record<MeetingTab, number> = {
-    resumo: 0,
-    acoes: acoes.length,
-    gravacao: gravacoes.length,
-    arquivos: arquivos.length,
-  };
 
   return (
-    <section className="case-detail">
-      <div className="detail-head">
-        <div>
-          <h2>{meeting.title}</h2>
-          <span>{formatDateTime(meeting.meeting_at)}</span>
-          {meeting.participants.length > 0 ? (
-            <ul className="portal-chips" aria-label="Participantes">
-              {meeting.participants.map(name => (
-                <li key={name}>{name}</li>
-              ))}
-            </ul>
-          ) : null}
-        </div>
-        <span className={meetingStatusClass(meeting.status)}>{meetingStatusLabel(meeting.status)}</span>
-      </div>
+    <section className="portal-page">
+      <MeetingHeader
+        backHref={MEETINGS_PATH}
+        backLabel="Voltar"
+        title={meeting.title}
+        status={meeting.status}
+        meetingAt={meeting.meeting_at}
+        participants={meeting.participants}
+      />
 
-      <div className="detail-tabs">
-        {MEETING_TABS.map(tab => (
-          <Link key={tab.key} href={meetingTabHref(base, tab.key)} className={aba === tab.key ? "active" : ""}>
-            {tab.label}
-            {counts[tab.key] > 0 ? <b>{counts[tab.key]}</b> : null}
-          </Link>
-        ))}
-      </div>
+      <MeetingTabs
+        base={base}
+        active={aba}
+        counts={{ acoes: acoes.length, gravacao: gravacoes.length, arquivos: arquivos.length }}
+      />
 
       {aba === "resumo" ? (
         meeting.summary?.trim() ? (
-          <article className="portal-prose">
-            <small>RESUMO DA REUNIÃO</small>
-            <p>{meeting.summary}</p>
-          </article>
+          <PortalPanel>
+            <p className="portal-text">{meeting.summary}</p>
+          </PortalPanel>
         ) : (
-          <EmptyNote icon="◷" title="Resumo ainda não publicado" text="A equipe Nexo ainda não registrou o resumo desta reunião." />
+          <PortalPanel empty="Resumo ainda não publicado para esta reunião." />
         )
       ) : null}
 
       {aba === "acoes" ? (
         acoes.length === 0 ? (
-          <EmptyNote icon="✓" title="Nenhuma ação registrada" text="Esta reunião não teve encaminhamentos registrados." />
+          <PortalPanel empty="Nenhuma ação registrada para esta reunião." />
         ) : (
-          <>
+          <PortalPanel>
             <p className="portal-summary-line">
-              {ACTION_STATUS.map(status => {
-                const total = acoes.filter(item => item.status === status).length;
-                return (
-                  <span key={status}>
-                    <b>{total}</b> {ACTION_STATUS_LABEL[status].toLowerCase()}
-                  </span>
-                );
-              })}
+              {ACTION_STATUS.map(status => (
+                <span key={status}>
+                  <b>{acoes.filter(item => item.status === status).length}</b>{" "}
+                  {ACTION_STATUS_LABEL[status].toLowerCase()}
+                </span>
+              ))}
             </p>
             <div className="portal-list">
               {acoes.map(item => (
                 <ActionItem key={item.id} item={item} />
               ))}
             </div>
-          </>
+          </PortalPanel>
+        )
+      ) : null}
+
+      {aba === "transcricao" ? (
+        meeting.transcript?.trim() ? (
+          <PortalPanel>
+            <p className="portal-text portal-transcript">{meeting.transcript}</p>
+          </PortalPanel>
+        ) : (
+          <PortalPanel empty="Transcrição ainda não disponível para esta reunião." />
         )
       ) : null}
 
       {aba === "gravacao" ? (
         gravacoes.length === 0 ? (
-          <EmptyNote icon="▶" title="Sem gravação" text="Nenhuma gravação foi anexada a esta reunião." />
+          <PortalPanel empty="Sem gravação disponível para esta reunião." />
         ) : (
-          <div className="portal-list">
-            {gravacoes.map(file => (
-              <Recording key={file.id} file={file} />
-            ))}
-          </div>
+          <PortalPanel>
+            <div className="portal-list">
+              {gravacoes.map(file => (
+                <Recording key={file.id} file={file} />
+              ))}
+            </div>
+          </PortalPanel>
         )
       ) : null}
 
       {aba === "arquivos" ? (
         arquivos.length === 0 ? (
-          <EmptyNote icon="▧" title="Sem arquivos" text="Nenhum documento foi anexado a esta reunião." />
+          <PortalPanel empty="Nenhum arquivo disponível para esta reunião." />
         ) : (
-          <div className="portal-list">
-            {arquivos.map(file => (
-              <FileCard key={file.id} file={file} />
-            ))}
-          </div>
+          <PortalPanel>
+            <div className="portal-list">
+              {arquivos.map(file => (
+                <FileCard key={file.id} file={file} />
+              ))}
+            </div>
+          </PortalPanel>
         )
       ) : null}
     </section>

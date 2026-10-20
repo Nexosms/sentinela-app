@@ -69,10 +69,11 @@ export function asFileKind(value: string): PortalFileKind {
 }
 
 export const MEETING_TABS = [
-  { key: "resumo", label: "Resumo" },
-  { key: "acoes", label: "Ações" },
-  { key: "gravacao", label: "Gravação" },
-  { key: "arquivos", label: "Arquivos" },
+  { key: "resumo", label: "Resumo", icon: "▤" },
+  { key: "acoes", label: "Ações", icon: "✓" },
+  { key: "transcricao", label: "Transcrição", icon: "☰" },
+  { key: "gravacao", label: "Gravação", icon: "▶" },
+  { key: "arquivos", label: "Arquivos", icon: "▧" },
 ] as const;
 export type MeetingTab = (typeof MEETING_TABS)[number]["key"];
 
@@ -85,6 +86,15 @@ export function parseMeetingTab(raw: string | string[] | undefined): MeetingTab 
 
 export function meetingTabHref(basePath: string, tab: MeetingTab): string {
   return tab === "resumo" ? basePath : `${basePath}?aba=${tab}`;
+}
+
+/** "outubro de 2026": cabeçalho de grupo da lista de reuniões (mês no horário de São Paulo). */
+export function monthLabel(iso: string): string {
+  return new Intl.DateTimeFormat("pt-BR", {
+    timeZone: "America/Sao_Paulo",
+    month: "long",
+    year: "numeric",
+  }).format(new Date(iso));
 }
 
 // ── Materiais ───────────────────────────────────────────────────────────────

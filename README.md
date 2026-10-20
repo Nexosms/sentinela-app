@@ -227,12 +227,14 @@ Aplicadas via MCP do Supabase, em ordem. `supabase migration list` no projeto
 | 038 | `get_report_catalog()`: `legal_name`/`cnpj` do "Este canal é operado por..." (Etapa 1 do relato) passam a vir sempre da Sentinela (via `app.sentinela_org_id()`), nunca da empresa-cliente do link — antes, `/relato/<cliente>` mostrava a própria empresa-cliente como operadora do canal dela mesma. `slug`/`name` continuam vindo da organização do link (usados para `orgSlug` e para achar as categorias certas) |
 | 039 | Portal do Cliente: `portal_meetings`, `portal_meeting_actions` e `portal_files` (gravação, arquivo de reunião e material numa tabela só), com RLS — leitura por membro da empresa e só o publicado, escrita só de admin da Sentinela (`app.is_nexo_admin()`; `has_role(org,{admin})` não serve porque um admin da própria empresa-cliente passaria). Triggers de auditoria `portal.content_*` (só tipo e id) e `app.write_audit` com a lista branca ampliada |
 | 040 | `open_portal_file()` (SECURITY INVOKER, sob RLS) e o bucket privado `portal` (limite de 2 GB, sem SVG/HTML, sem policies em `storage.objects`) |
+| 041 | `portal_meetings.transcript` — texto da aba Transcrição, com a mesma visibilidade e RLS da reunião |
 
 ### Portal do Cliente
 
 Cada empresa-cliente tem, no mesmo painel e no mesmo login, duas áreas: **Minhas Reuniões**
-(`/admin/reunioes`: resumo, ações, gravação e arquivos de cada reunião, da mais recente para a mais
-antiga) e **Materiais e Documentos** (`/admin/materiais`: Treinamento, CDN Conecta e Cartazes, com
+(`/admin/reunioes`: lista por mês, da mais recente para a mais antiga; cada reunião abre numa página
+com "← Voltar", título, situação, data, participantes e as abas Resumo, Ações, Transcrição, Gravação e
+Arquivos) e **Materiais e Documentos** (`/admin/materiais`: Treinamento, CDN Conecta e Cartazes, com
 busca). Os dois itens ficam fora da grade de "Time e permissões" (`configurable: false` em
 `lib/admin/navItems.ts`): aparecem para todo papel, e o conteúdo é que é filtrado.
 

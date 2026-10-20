@@ -1,5 +1,4 @@
 import type { Metadata } from "next";
-import Link from "next/link";
 import { notFound } from "next/navigation";
 
 import AdminTopbar from "@/components/admin/AdminTopbar";
@@ -9,17 +8,14 @@ import {
   ExcluirForm,
   NovoArquivoForm,
   ReuniaoForm,
+  TranscricaoForm,
 } from "@/components/admin/portal/PortalForms";
+import { MeetingHeader, MeetingTabs } from "@/components/portal/MeetingHeader";
 import { ActionItem, EmptyNote, FileCard, Recording } from "@/components/portal/parts";
-import { formatDateTime } from "@/lib/admin/labels";
 import { isNexoAdmin } from "@/lib/org/context";
 import { createClient } from "@/lib/supabase/server";
 import {
   asFileKind,
-  MEETING_TABS,
-  meetingStatusClass,
-  meetingStatusLabel,
-  meetingTabHref,
   parseMeetingTab,
   portalAdminMeetingPath,
   portalAdminPath,
@@ -60,7 +56,9 @@ export default async function PortalAdminMeetingPage({
   const supabase = await createClient();
   const { data: meeting } = await supabase
     .from("portal_meetings")
-    .select("id, title, meeting_at, participants, status, summary, is_published, organizations(trade_name)")
+    .select(
+      "id, title, meeting_at, participants, status, summary, transcript, is_published, organizations(trade_name)",
+    )
     .eq("id", id)
     .eq("org_id", orgId)
     .maybeSingle();
@@ -97,33 +95,21 @@ export default async function PortalAdminMeetingPage({
     <>
       <AdminTopbar eyebrow="NEXO" title={`Portal · ${empresa}`} />
       <section className="portal-page">
-        <Link className="quiet-link" href={portalAdminPath(orgId)}>
-          ← Voltar para as reuniões de {empresa}
-        </Link>
-
-        <div className="detail-head">
-          <div>
-            <h2>{meeting.title}</h2>
-            <span>
-              {formatDateTime(meeting.meeting_at)}
-              {meeting.participants.length > 0 ? ` · ${meeting.participants.join(", ")}` : ""}
-            </span>
-          </div>
-          <div className="portal-badges">
-            <span className={meetingStatusClass(meeting.status)}>{meetingStatusLabel(meeting.status)}</span>
+        <MeetingHeader
+          backHref={portalAdminPath(orgId)}
+          backLabel={`Voltar para as reuniões de ${empresa}`}
+          title={meeting.title}
+          status={meeting.status}
+          meetingAt={meeting.meeting_at}
+          participants={meeting.participants}
+          extra={
             <span className={meeting.is_published ? "risk baixo" : "risk moderado"}>
               {meeting.is_published ? "Visível ao cliente" : "Rascunho"}
             </span>
-          </div>
-        </div>
+          }
+        />
 
-        <div className="detail-tabs">
-          {MEETING_TABS.map(tab => (
-            <Link key={tab.key} href={meetingTabHref(base, tab.key)} className={aba === tab.key ? "active" : ""}>
-              {tab.label}
-            </Link>
-          ))}
-        </div>
+        <MeetingTabs base={base} active={aba} />
 
         {aba === "resumo" ? (
           <>
@@ -184,6 +170,10 @@ export default async function PortalAdminMeetingPage({
               <AcaoForm orgId={orgId} meetingId={id} />
             </div>
           </>
+        ) : null}
+
+        {aba === "transcricao" ? (
+          <TranscricaoForm orgId={orgId} meetingId={id} transcript={meeting.transcript} />
         ) : null}
 
         {aba === "gravacao" || aba === "arquivos" ? (

@@ -3,7 +3,6 @@ import { notFound } from "next/navigation";
 
 import AdminTopbar from "@/components/admin/AdminTopbar";
 import MeetingDetail from "@/components/portal/MeetingDetail";
-import MeetingShell from "@/components/portal/MeetingShell";
 import { parseMeetingTab } from "@/lib/portal/portal";
 
 export const metadata: Metadata = { title: "Minhas Reuniões" };
@@ -24,7 +23,7 @@ export default async function Page({
   return (
     <>
       <AdminTopbar eyebrow="PORTAL" title="Minhas Reuniões" />
-      <MeetingShell selectedId={id} detail={<MeetingDetail id={id} aba={aba} />} />
+      <MeetingDetail id={id} aba={aba} />
     </>
   );
 }
