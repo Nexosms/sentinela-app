@@ -228,6 +228,7 @@ Aplicadas via MCP do Supabase, em ordem. `supabase migration list` no projeto
 | 039 | Portal do Cliente: `portal_meetings`, `portal_meeting_actions` e `portal_files` (gravação, arquivo de reunião e material numa tabela só), com RLS — leitura por membro da empresa e só o publicado, escrita só de admin da Sentinela (`app.is_nexo_admin()`; `has_role(org,{admin})` não serve porque um admin da própria empresa-cliente passaria). Triggers de auditoria `portal.content_*` (só tipo e id) e `app.write_audit` com a lista branca ampliada |
 | 040 | `open_portal_file()` (SECURITY INVOKER, sob RLS) e o bucket privado `portal` (limite de 2 GB, sem SVG/HTML, sem policies em `storage.objects`) |
 | 041 | `portal_meetings.transcript` — texto da aba Transcrição, com a mesma visibilidade e RLS da reunião |
+| 042 | `portal_folders` (pasta de materiais — campanha mensal do CDN Conecta) e `portal_files.folder_id`: a pasta tem a visibilidade e os arquivos dentro herdam; `audit_portal()` passa a cobrir a tabela |
 
 ### Portal do Cliente
 
@@ -249,6 +250,10 @@ busca). Os dois itens ficam fora da grade de "Time e permissões" (`configurable
   `storage.info`. Abrir/baixar passa por `/api/portal/files/<id>` (302 para URL assinada). `?inline=1`
   só para vídeo, áudio, imagem e PDF (URL de 1 h, para o vídeo poder avançar); o resto sempre baixa.
   Excluir arquivo ou reunião apaga o objeto do Storage antes da linha.
+- **Pastas:** no CDN Conecta, cada campanha mensal é uma pasta (`/admin/clientes/<empresa>/portal`, aba Materiais
+  → "Nova pasta"). Dentro dela se envia vários arquivos de uma vez, ou a pasta inteira do computador (subpastas
+  entram todas na mesma pasta do portal, sem hierarquia). O cliente vê as pastas como cartões, em ordem de mês,
+  e abre cada uma em `/admin/materiais/pastas/<id>`; a busca também acha arquivos dentro de pastas publicadas.
 - **Limite de tamanho:** o bucket aceita 2 GB, mas o **limite global do projeto** (Supabase → Storage →
   Settings) manda por cima — num projeto novo é 50 MB, e um envio maior volta como `EntityTooLarge`.
   Precisa ser elevado no painel. O envio é um PUT único, sem retomada.

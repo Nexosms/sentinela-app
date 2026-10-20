@@ -7,9 +7,11 @@ import {
   editarArquivo,
   excluirAcao,
   excluirArquivo,
+  excluirPasta,
   excluirReuniao,
   registrarArquivo,
   salvarAcao,
+  salvarPasta,
   salvarReuniao,
   salvarTranscricao,
   substituirArquivo,
@@ -21,6 +23,7 @@ import {
   MATERIAL_CATEGORIES,
   MEETING_STATUS,
   MEETING_STATUS_LABEL,
+  MONTH_NAMES,
   toDatetimeLocal,
   type PortalFileKind,
 } from "@/lib/portal/portal";
@@ -68,6 +71,8 @@ export type FileValues = {
   mimeType: string;
   sizeBytes: number;
   isPublished: boolean;
+  /** Dentro de uma pasta, categoria e visibilidade são da pasta. */
+  inFolder?: boolean;
 };
 
 function Feedback({ state }: { state: ActionState }) {
@@ -284,6 +289,12 @@ const EXCLUIR = {
     rotulo: "Excluir reunião",
   },
   acao: { action: excluirAcao, confirmar: "Excluir esta ação?", rotulo: "Excluir ação" },
+  pasta: {
+    action: excluirPasta,
+    confirmar:
+      "Excluir esta pasta? Todos os arquivos dentro dela também serão apagados do armazenamento, e não há como desfazer.",
+    rotulo: "Excluir pasta",
+  },
   arquivo: {
     action: excluirArquivo,
     confirmar: "Excluir este arquivo? Ele será apagado do armazenamento e não há como desfazer.",
@@ -440,7 +451,7 @@ export function ArquivoEditor({ orgId, file }: { orgId: string; file: FileValues
             Data de publicação
             <input type="date" name="published_at" defaultValue={eco.published_at ?? file.publishedAt} />
           </label>
-          {file.kind === "material" ? (
+          {file.kind === "material" && !file.inFolder ? (
             <label>
               Categoria
               <select name="category" defaultValue={eco.category ?? file.category ?? ""}>
@@ -457,7 +468,7 @@ export function ArquivoEditor({ orgId, file }: { orgId: string; file: FileValues
           Descrição
           <textarea name="description" rows={2} defaultValue={eco.description ?? file.description ?? ""} />
         </label>
-        {file.kind === "material" ? (
+        {file.kind === "material" && !file.inFolder ? (
           <label className="check-row">
             <input type="checkbox" name="is_published" value="1" defaultChecked={publicado} />
             <span>Visível no portal do cliente</span>
@@ -503,6 +514,98 @@ function SubstituirArquivo({ orgId, file }: { orgId: string; file: FileValues })
         <input type="hidden" name="filename" value={atual?.filename ?? ""} />
         <button type="submit" className="portal-secondary" disabled={pending || busy || !atual}>
           {pending ? "Substituindo…" : busy ? "Enviando arquivo…" : "Substituir arquivo"}
+        </button>
+      </form>
+      <Feedback state={state} />
+    </div>
+  );
+}
+
+// ── Pasta (campanha mensal) ─────────────────────────────────────────────────
+
+export type FolderValues = {
+  id: string;
+  name: string;
+  /** `AAAA-MM-01` */
+  referenceMonth: string;
+  description: string | null;
+  isPublished: boolean;
+};
+
+export function PastaForm({
+  orgId,
+  folder,
+  defaultMonth,
+  defaultYear,
+}: {
+  orgId: string;
+  folder?: FolderValues;
+  /** "1".."12" e o ano de hoje, calculados no servidor (render de cliente não lê o relógio). */
+  defaultMonth: string;
+  defaultYear: string;
+}) {
+  const [state, action, pending] = useActionState(salvarPasta, EMPTY);
+  const eco = state.enviado ?? {};
+  const [anoRef, mesRef] = folder ? folder.referenceMonth.split("-") : [defaultYear, defaultMonth];
+  const publicada = state.enviado ? eco.is_published === "1" : (folder?.isPublished ?? false);
+
+  return (
+    <div className="message-box">
+      <div className="message-head">
+        <span>▣</span>
+        <div>
+          <strong>{folder ? "Dados da pasta" : "Nova pasta"}</strong>
+          <small>
+            Uma pasta por campanha mensal. Os arquivos dentro dela aparecem para o cliente quando a
+            pasta estiver marcada como visível.
+          </small>
+        </div>
+      </div>
+      <form action={action} key={formKey(state, folder?.id)}>
+        <input type="hidden" name="orgId" value={orgId} />
+        {folder ? <input type="hidden" name="id" value={folder.id} /> : null}
+        <div className="field-grid two">
+          <label>
+            Nome
+            <input
+              name="name"
+              defaultValue={eco.name ?? folder?.name ?? ""}
+              maxLength={200}
+              placeholder="Ex.: Campanha de outubro"
+            />
+          </label>
+          <label>
+            Mês de referência
+            <select name="month" defaultValue={eco.month ?? String(Number(mesRef))}>
+              {MONTH_NAMES.map((name, index) => (
+                <option key={name} value={String(index + 1)}>
+                  {name}
+                </option>
+              ))}
+            </select>
+          </label>
+          <label>
+            Ano
+            <input
+              name="year"
+              type="number"
+              inputMode="numeric"
+              min={2000}
+              max={2100}
+              defaultValue={eco.year ?? anoRef}
+            />
+          </label>
+        </div>
+        <label className="wide-field">
+          Descrição
+          <textarea name="description" rows={2} defaultValue={eco.description ?? folder?.description ?? ""} />
+        </label>
+        <label className="check-row">
+          <input type="checkbox" name="is_published" value="1" defaultChecked={publicada} />
+          <span>Visível no portal do cliente</span>
+        </label>
+        <button type="submit" className="primary-button" disabled={pending}>
+          {pending ? "Salvando…" : folder ? "Salvar pasta" : "Criar pasta"} <span>→</span>
         </button>
       </form>
       <Feedback state={state} />

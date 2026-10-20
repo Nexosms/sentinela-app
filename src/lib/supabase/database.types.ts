@@ -1322,6 +1322,7 @@ export type Database = {
           created_by: string | null
           description: string | null
           filename: string
+          folder_id: string | null
           id: string
           is_published: boolean
           kind: string
@@ -1340,6 +1341,7 @@ export type Database = {
           created_by?: string | null
           description?: string | null
           filename: string
+          folder_id?: string | null
           id?: string
           is_published?: boolean
           kind: string
@@ -1358,6 +1360,7 @@ export type Database = {
           created_by?: string | null
           description?: string | null
           filename?: string
+          folder_id?: string | null
           id?: string
           is_published?: boolean
           kind?: string
@@ -1379,6 +1382,13 @@ export type Database = {
             referencedColumns: ["id"]
           },
           {
+            foreignKeyName: "portal_files_folder_id_fkey"
+            columns: ["folder_id"]
+            isOneToOne: false
+            referencedRelation: "portal_folders"
+            referencedColumns: ["id"]
+          },
+          {
             foreignKeyName: "portal_files_meeting_id_fkey"
             columns: ["meeting_id"]
             isOneToOne: false
@@ -1387,6 +1397,60 @@ export type Database = {
           },
           {
             foreignKeyName: "portal_files_org_id_fkey"
+            columns: ["org_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      portal_folders: {
+        Row: {
+          category: string
+          created_at: string
+          created_by: string | null
+          description: string | null
+          id: string
+          is_published: boolean
+          name: string
+          org_id: string
+          reference_month: string
+          updated_at: string
+        }
+        Insert: {
+          category: string
+          created_at?: string
+          created_by?: string | null
+          description?: string | null
+          id?: string
+          is_published?: boolean
+          name: string
+          org_id: string
+          reference_month: string
+          updated_at?: string
+        }
+        Update: {
+          category?: string
+          created_at?: string
+          created_by?: string | null
+          description?: string | null
+          id?: string
+          is_published?: boolean
+          name?: string
+          org_id?: string
+          reference_month?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "portal_folders_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "portal_folders_org_id_fkey"
             columns: ["org_id"]
             isOneToOne: false
             referencedRelation: "organizations"

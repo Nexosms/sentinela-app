@@ -453,3 +453,17 @@ form.inbox-tools{align-items:center;flex-wrap:wrap}
   .portal-panel{padding:16px}
   .portal-tabs a{padding:0 12px}
 }
+
+/* Pastas de materiais: envio em lote */
+.portal-bulk-pick{display:flex;flex-wrap:wrap;gap:10px}
+.portal-bulk-button{display:inline-flex;align-items:center;justify-content:center;min-height:48px;padding:0 18px;color:var(--teal);background:#f7faf7;border:1px dashed #8caaa2;border-radius:10px;font-size:13px;font-weight:700;cursor:pointer}
+.portal-bulk-button:hover{border-color:var(--teal)}
+.portal-bulk-button input{position:absolute;width:1px;height:1px;opacity:0;pointer-events:none}
+.portal-bulk-button:focus-within{outline:3px solid #e5b76e;outline-offset:2px}
+.portal-bulk-list{display:flex;flex-direction:column;gap:4px;max-height:260px;margin:0;padding:0;overflow:auto;list-style:none}
+.portal-bulk-list li{display:grid;grid-template-columns:18px minmax(0,1fr) auto;align-items:baseline;gap:8px;padding:6px 10px;font-size:12px;background:white;border:1px solid #e4ebe6;border-radius:7px}
+.portal-bulk-list li strong{overflow:hidden;font-weight:600;text-overflow:ellipsis;white-space:nowrap}
+.portal-bulk-list li small{color:var(--muted);font-size:11px}
+.portal-bulk-list li.ok span{color:#287264}
+.portal-bulk-list li.erro,.portal-bulk-list li.ignorado{border-color:#e8c7c0}
+.portal-bulk-list li.erro span,.portal-bulk-list li.ignorado span{color:var(--danger)}

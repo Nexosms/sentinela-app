@@ -184,3 +184,39 @@ export function fromDatetimeLocal(value: string): string | null {
   const date = new Date(`${value}:00-03:00`);
   return Number.isNaN(date.getTime()) ? null : date.toISOString();
 }
+
+// ── Pastas de materiais (ex.: campanha mensal do CDN Conecta) ───────────────
+
+export const FOLDERS_PATH = "/admin/materiais/pastas";
+
+export function folderPath(folderId: string): string {
+  return `${FOLDERS_PATH}/${folderId}`;
+}
+
+export function portalAdminFolderPath(orgId: string, folderId: string): string {
+  return `${portalAdminPath(orgId)}/pastas/${folderId}`;
+}
+
+/** Só o CDN Conecta usa pastas por enquanto; o banco aceita qualquer categoria. */
+export const FOLDER_CATEGORY: MaterialCategory = "cdn_conecta";
+
+export const MONTH_NAMES = [
+  "Janeiro", "Fevereiro", "Março", "Abril", "Maio", "Junho",
+  "Julho", "Agosto", "Setembro", "Outubro", "Novembro", "Dezembro",
+] as const;
+
+/** `reference_month` é `date` (primeiro dia do mês): "2026-10-01" → "Outubro de 2026", sem passar por fuso. */
+export function monthRefLabel(dateOnly: string): string {
+  const [year, month] = dateOnly.split("-");
+  const name = MONTH_NAMES[Number(month) - 1];
+  return name && year ? `${name} de ${year}` : dateOnly;
+}
+
+/** Mês + ano do formulário → primeiro dia do mês (`AAAA-MM-01`). */
+export function fromMonthYear(month: string, year: string): string | null {
+  const m = Number(month);
+  const y = Number(year);
+  if (!Number.isInteger(m) || m < 1 || m > 12) return null;
+  if (!Number.isInteger(y) || y < 2000 || y > 2100) return null;
+  return `${y}-${String(m).padStart(2, "0")}-01`;
+}

@@ -20,10 +20,13 @@ import {
 } from "@/lib/portal/files";
 import {
   ACTION_STATUS,
+  FOLDER_CATEGORY,
   MATERIAL_CATEGORIES,
   MEETING_STATUS,
   fromDatetimeLocal,
+  fromMonthYear,
   parseParticipants,
+  portalAdminFolderPath,
   portalAdminMeetingPath,
   portalAdminPath,
 } from "@/lib/portal/portal";
@@ -500,7 +503,7 @@ export async function editarArquivo(_prev: ActionState, formData: FormData): Pro
 
   const { data: atual } = await ctx.supabase
     .from("portal_files")
-    .select("kind")
+    .select("kind, folder_id")
     .eq("id", id)
     .eq("org_id", orgId)
     .maybeSingle();
@@ -517,7 +520,8 @@ export async function editarArquivo(_prev: ActionState, formData: FormData): Pro
     description: parsed.data.description || null,
   };
   if (parsed.data.published_at) patch.published_at = parsed.data.published_at;
-  if (atual.kind === "material") {
+  // Dentro de uma pasta, categoria e visibilidade são da pasta.
+  if (atual.kind === "material" && !atual.folder_id) {
     if (!z.enum(CATEGORY_KEYS).safeParse(category).success) return { error: "Escolha a categoria.", enviado: eco };
     patch.category = category;
     patch.is_published = flag(formData, "is_published");
@@ -607,4 +611,144 @@ export async function excluirArquivo(_prev: ActionState, formData: FormData): Pr
   if (!data || data.length === 0) return { error: SEM_ALCANCE };
   revalidar();
   return done("Arquivo excluído.");
+}
+
+// ── Pastas (campanhas mensais do CDN Conecta) ───────────────────────────────
+
+const pastaSchema = z.object({
+  name: z.string().trim().min(2, "Dê um nome à pasta (mín. 2 caracteres).").max(200, "Nome longo demais."),
+  description: z.string().trim().max(2000, "Descrição longa demais."),
+});
+
+export async function salvarPasta(_prev: ActionState, formData: FormData): Promise<ActionState> {
+  const orgId = text(formData, "orgId");
+  const id = text(formData, "id");
+  const eco = echo(formData, "name", "month", "year", "description", "is_published");
+
+  const ctx = await exigirNexo(orgId);
+  if ("error" in ctx) return { error: ctx.error, enviado: eco };
+
+  const parsed = pastaSchema.safeParse({
+    name: text(formData, "name"),
+    description: text(formData, "description"),
+  });
+  if (!parsed.success) return { error: firstIssue(parsed.error), enviado: eco };
+
+  const referenceMonth = fromMonthYear(text(formData, "month"), text(formData, "year"));
+  if (!referenceMonth) return { error: "Informe o mês e o ano da campanha.", enviado: eco };
+
+  const values = {
+    name: parsed.data.name,
+    description: parsed.data.description || null,
+    reference_month: referenceMonth,
+    is_published: flag(formData, "is_published"),
+  };
+
+  if (id) {
+    if (!UUID.safeParse(id).success) return { error: "Pasta inválida.", enviado: eco };
+    const { data, error } = await ctx.supabase
+      .from("portal_folders")
+      .update(values)
+      .eq("id", id)
+      .eq("org_id", orgId)
+      .select("id");
+    if (error) return { ...fail("editar pasta", error.message, "Não foi possível salvar a pasta."), enviado: eco };
+    if (!data || data.length === 0) return { error: SEM_ALCANCE, enviado: eco };
+    revalidar();
+    return done(values.is_published ? "Pasta salva e visível ao cliente." : "Pasta salva (rascunho — o cliente não vê).");
+  }
+
+  const { data, error } = await ctx.supabase
+    .from("portal_folders")
+    .insert({ ...values, org_id: orgId, category: FOLDER_CATEGORY, created_by: ctx.userId })
+    .select("id")
+    .maybeSingle();
+  if (error || !data) {
+    return { ...fail("criar pasta", error?.message ?? "insert sem retorno", "Não foi possível criar a pasta."), enviado: eco };
+  }
+  revalidar();
+  redirect(portalAdminFolderPath(orgId, data.id));
+}
+
+export async function excluirPasta(_prev: ActionState, formData: FormData): Promise<ActionState> {
+  const orgId = text(formData, "orgId");
+  const id = text(formData, "id");
+  const ctx = await exigirNexo(orgId);
+  if ("error" in ctx) return ctx;
+  if (!UUID.safeParse(id).success) return { error: "Pasta inválida." };
+
+  // Como na reunião: o CASCADE apaga as linhas, não os objetos do Storage.
+  const { data: arquivos } = await ctx.supabase
+    .from("portal_files")
+    .select("storage_path")
+    .eq("folder_id", id)
+    .eq("org_id", orgId);
+  if (!(await removerObjetos((arquivos ?? []).map(file => file.storage_path)))) {
+    return { error: "Não foi possível remover os arquivos da pasta do armazenamento. Tente de novo." };
+  }
+
+  const { data, error } = await ctx.supabase
+    .from("portal_folders")
+    .delete()
+    .eq("id", id)
+    .eq("org_id", orgId)
+    .select("id");
+  if (error) return fail("excluir pasta", error.message, "Não foi possível excluir a pasta.");
+  if (!data || data.length === 0) return { error: SEM_ALCANCE };
+
+  revalidar();
+  redirect(`${portalAdminPath(orgId)}?aba=materiais&categoria=${FOLDER_CATEGORY}`);
+}
+
+export type RegistroRapido = { ok: true } | { error: string };
+
+/**
+ * Registra UM arquivo já enviado dentro de uma pasta, sem formulário: o envio em
+ * lote (vários arquivos, ou a pasta inteira do computador) chama isto a cada
+ * arquivo que termina de subir. O título nasce do nome do arquivo e dá para
+ * ajustar depois; categoria e visibilidade são da pasta.
+ */
+export async function registrarArquivoNaPasta(input: {
+  orgId: string;
+  folderId: string;
+  path: string;
+  filename: string;
+}): Promise<RegistroRapido> {
+  const ctx = await exigirNexo(input.orgId);
+  if ("error" in ctx) return ctx;
+  if (!UUID.safeParse(input.folderId).success) return { error: "Pasta inválida." };
+
+  const { data: pasta } = await ctx.supabase
+    .from("portal_folders")
+    .select("id, category")
+    .eq("id", input.folderId)
+    .eq("org_id", input.orgId)
+    .maybeSingle();
+  if (!pasta) return { error: "Pasta não encontrada nesta empresa." };
+
+  const objeto = await conferirObjeto(input.orgId, input.path);
+  if ("error" in objeto) return objeto;
+
+  const filename = nomeSeguro(input.filename);
+  const { error } = await ctx.supabase.from("portal_files").insert({
+    org_id: input.orgId,
+    kind: "material",
+    folder_id: pasta.id,
+    category: pasta.category,
+    title: filename.replace(/.[^.]+$/, "").slice(0, 200) || filename,
+    description: null,
+    published_at: todayInSaoPaulo(),
+    storage_path: input.path,
+    filename,
+    mime_type: objeto.mime,
+    size_bytes: objeto.size,
+    is_published: true,
+    created_by: ctx.userId,
+  });
+  if (error) {
+    console.error("[portal] registrar arquivo na pasta: %s", error.message);
+    return { error: "Não foi possível registrar o arquivo." };
+  }
+  revalidar();
+  return { ok: true };
 }
