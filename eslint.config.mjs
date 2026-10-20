@@ -27,6 +27,9 @@ const eslintConfig = defineConfig([
       // provada pela RLS (open_evidence) e a trilha já foi gravada antes de a
       // chave entrar em cena. Ver o comentário no topo da rota.
       "src/app/api/admin/evidence/**",
+      // Assinatura de URL do bucket privado `portal` (Portal do Cliente), com a
+      // mesma lógica: a RLS autoriza em open_portal_file antes de a chave entrar.
+      "src/app/api/portal/**",
       // Cadastro de empresa-cliente: criar organização e o primeiro
       // `org_members` dela é bootstrapping — não existe ainda org_id nem
       // admin para a RLS autorizar. Ver o comentário no topo de
@@ -41,7 +44,7 @@ const eslintConfig = defineConfig([
             {
               group: ["**/supabase/admin", "@/lib/supabase/admin"],
               message:
-                "O cliente service-role só pode ser importado em api/public/**, api/cron/**, api/admin/invites e api/admin/evidence. Use @/lib/supabase/server (sob RLS).",
+                "O cliente service-role só pode ser importado em api/public/**, api/cron/**, api/admin/invites, api/admin/evidence, api/portal e admin/clientes. Use @/lib/supabase/server (sob RLS).",
             },
           ],
         },

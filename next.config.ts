@@ -15,7 +15,11 @@ const csp = [
   "default-src 'self'",
   `script-src 'self' 'unsafe-inline'${isDev ? " 'unsafe-eval'" : ""}`,
   "style-src 'self' 'unsafe-inline'",
-  "img-src 'self' data: blob:",
+  // Portal do Cliente: imagens e gravações vêm do bucket privado do Supabase,
+  // por URL assinada. Sem `frame-src` de propósito: o Storage pode servir com
+  // CSP `sandbox`, e o PDF abre em outra aba em vez de num iframe.
+  "img-src 'self' data: blob: https://*.supabase.co",
+  "media-src 'self' blob: https://*.supabase.co",
   "font-src 'self'",
   `connect-src 'self' https://*.supabase.co${isDev ? " ws://localhost:* http://localhost:*" : ""}`,
   "form-action 'self'",

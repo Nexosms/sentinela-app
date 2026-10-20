@@ -10,7 +10,7 @@ export type Database = {
   // Allows to automatically instantiate createClient with right options
   // instead of createClient<Database, { PostgrestVersion: 'XX' }>(URL, KEY)
   __InternalSupabase: {
-    PostgrestVersion: "14.5"
+    PostgrestVersion: "14.17"
   }
   public: {
     Tables: {
@@ -1315,6 +1315,203 @@ export type Database = {
         }
         Relationships: []
       }
+      portal_files: {
+        Row: {
+          category: string | null
+          created_at: string
+          created_by: string | null
+          description: string | null
+          filename: string
+          id: string
+          is_published: boolean
+          kind: string
+          meeting_id: string | null
+          mime_type: string
+          org_id: string
+          published_at: string
+          size_bytes: number
+          storage_path: string
+          title: string
+          updated_at: string
+        }
+        Insert: {
+          category?: string | null
+          created_at?: string
+          created_by?: string | null
+          description?: string | null
+          filename: string
+          id?: string
+          is_published?: boolean
+          kind: string
+          meeting_id?: string | null
+          mime_type: string
+          org_id: string
+          published_at?: string
+          size_bytes: number
+          storage_path: string
+          title: string
+          updated_at?: string
+        }
+        Update: {
+          category?: string | null
+          created_at?: string
+          created_by?: string | null
+          description?: string | null
+          filename?: string
+          id?: string
+          is_published?: boolean
+          kind?: string
+          meeting_id?: string | null
+          mime_type?: string
+          org_id?: string
+          published_at?: string
+          size_bytes?: number
+          storage_path?: string
+          title?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "portal_files_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "portal_files_meeting_id_fkey"
+            columns: ["meeting_id"]
+            isOneToOne: false
+            referencedRelation: "portal_meetings"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "portal_files_org_id_fkey"
+            columns: ["org_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      portal_meeting_actions: {
+        Row: {
+          created_at: string
+          created_by: string | null
+          description: string
+          due_on: string | null
+          id: string
+          meeting_id: string
+          org_id: string
+          owner_name: string | null
+          status: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          created_by?: string | null
+          description: string
+          due_on?: string | null
+          id?: string
+          meeting_id: string
+          org_id: string
+          owner_name?: string | null
+          status?: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          created_by?: string | null
+          description?: string
+          due_on?: string | null
+          id?: string
+          meeting_id?: string
+          org_id?: string
+          owner_name?: string | null
+          status?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "portal_meeting_actions_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "portal_meeting_actions_meeting_id_fkey"
+            columns: ["meeting_id"]
+            isOneToOne: false
+            referencedRelation: "portal_meetings"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "portal_meeting_actions_org_id_fkey"
+            columns: ["org_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      portal_meetings: {
+        Row: {
+          created_at: string
+          created_by: string | null
+          id: string
+          is_published: boolean
+          meeting_at: string
+          org_id: string
+          participants: string[]
+          status: string
+          summary: string | null
+          title: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          is_published?: boolean
+          meeting_at: string
+          org_id: string
+          participants?: string[]
+          status?: string
+          summary?: string | null
+          title: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          is_published?: boolean
+          meeting_at?: string
+          org_id?: string
+          participants?: string[]
+          status?: string
+          summary?: string | null
+          title?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "portal_meetings_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "portal_meetings_org_id_fkey"
+            columns: ["org_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       profiles: {
         Row: {
           created_at: string
@@ -2257,6 +2454,17 @@ export type Database = {
           report_id: string
           sha256: string
           size_bytes: number
+          storage_path: string
+        }[]
+      }
+      open_portal_file: {
+        Args: { p_file: string }
+        Returns: {
+          file_id: string
+          filename: string
+          kind: string
+          mime_type: string
+          org_id: string
           storage_path: string
         }[]
       }
