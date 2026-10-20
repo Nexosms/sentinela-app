@@ -325,3 +325,14 @@ form.inbox-tools{align-items:center;flex-wrap:wrap}
 .case-actions>a{display:inline-flex;align-items:center;justify-content:center;min-height:44px;padding:0 12px;color:inherit;background:white;border:1px solid #d9e0dc;border-radius:7px;font-size:11px;text-decoration:none;cursor:pointer}
 .case-actions>a:hover{border-color:var(--teal)}
 .case-actions-hint{display:block;margin-top:8px;color:var(--muted);font-size:10px;line-height:1.5;text-align:right}
+
+/* ── seletor de empresa: busca + rolagem ─────────────────────────────────────
+   A lista passou a ter campo de busca (TenantSwitchList.tsx) e rola sozinha,
+   para que dezenas de empresas não empurrem o menu para fora da tela. */
+.tenant-switch-list .tenant-search{width:100%;min-height:36px;margin-bottom:4px;padding:0 10px;color:white;background:rgba(255,255,255,.08);border:1px solid rgba(255,255,255,.12);border-radius:6px;font-size:11px}
+.tenant-switch-list .tenant-search::placeholder{color:#8fa39f}
+.tenant-switch-list .tenant-search:focus-visible{outline:2px solid var(--mint);outline-offset:1px}
+.tenant-switch-scroll{display:flex;flex-direction:column;gap:2px;max-height:min(46vh,420px);overflow-y:auto;overscroll-behavior:contain}
+.tenant-switch-scroll form{display:contents}
+.tenant-switch-divider{width:100%;margin:4px 0;border:0;border-top:1px solid rgba(255,255,255,.12)}
+.tenant-switch-empty{margin:8px 10px;color:#8fa39f;font-size:10px}

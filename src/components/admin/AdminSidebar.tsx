@@ -3,7 +3,8 @@ import Brand from "@/components/brand/Brand";
 import AdminNavLinks, { type NavItem } from "./AdminNavLinks";
 import SignOutButton from "./SignOutButton";
 import { roleLabel, type AppRole, type MyOrganization } from "@/lib/org/context";
-import { trocarOrganizacaoAtiva } from "@/lib/org/actions";
+import TenantSwitchList from "./TenantSwitchList";
+import { publicEnv } from "@/lib/env";
 import { NAV_ITEMS, CONFIGURACOES_ITEM, isNavVisible, type NavOverrides } from "@/lib/admin/navItems";
 import { formatDocumento } from "@/lib/admin/configuracoes";
 
@@ -74,17 +75,11 @@ export default function AdminSidebar({
             </div>
             <b>⌄</b>
           </summary>
-          <div className="tenant-switch-list">
-            {trocaveis.map(org => (
-              <form action={trocarOrganizacaoAtiva} key={org.orgId}>
-                <input type="hidden" name="orgId" value={org.orgId} />
-                <button type="submit" className={org.orgId === orgId ? "active" : ""}>
-                  {org.tradeName}
-                  <em className="tenant-doc">{formatDocumento(org.cnpj)}</em>
-                </button>
-              </form>
-            ))}
-          </div>
+          <TenantSwitchList
+            orgs={trocaveis}
+            activeOrgId={orgId}
+            pinnedSlug={publicEnv.defaultOrgSlug}
+          />
         </details>
       ) : (
         <div className="tenant">
