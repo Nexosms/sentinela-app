@@ -40,7 +40,7 @@ o CSS mira por tag dentro de um contexto de classe (`.field-grid label`, `.file-
 |---|---|
 | `lib/supabase/client.ts` | Client components com sessão de staff. Nunca no fluxo do denunciante |
 | `lib/supabase/server.ts` | Padrão para todo código de staff — **sempre sob RLS** |
-| `lib/supabase/admin.ts` | Service role. Só em `api/public/**`, `api/cron/**`, `api/admin/invites` e `api/admin/evidence` |
+| `lib/supabase/admin.ts` | Service role. Só em `api/public/**`, `api/cron/**`, `api/admin/invites`, `api/admin/evidence`, `api/portal` e `admin/clientes/**` |
 
 A última fronteira é imposta por ESLint (`no-restricted-imports` em `eslint.config.mjs`).
 Se uma query de staff só funciona com service role, **a política de RLS está errada.**
@@ -50,6 +50,11 @@ Se uma query de staff só funciona com service role, **a política de RLS está 
 consegue assinar uma URL sob RLS. A rota autoriza e registra o acesso com `open_evidence`
 (SECURITY INVOKER, sob RLS) **antes** de tocar na chave; o service role só assina um caminho já
 autorizado. Nenhuma leitura de dado de staff é feita com ele.
+
+`api/portal/files/[id]` segue o mesmo desenho para o bucket `portal` (Portal do Cliente): autoriza com
+`open_portal_file` (SECURITY INVOKER, sob RLS) e só então o service role assina a URL. As server
+actions de `admin/clientes/**` usam o service role apenas para o Storage (assinar envio, conferir e
+apagar objeto); toda gravação em tabela vai sob RLS.
 
 **O denunciante não tem conta e nunca fala com o PostgREST.** `reports` e tabelas filhas são
 DENY-ALL para `anon`; todo byte passa por route handler no runtime Node, que valida protocolo +
@@ -220,6 +225,33 @@ Aplicadas via MCP do Supabase, em ordem. `supabase migration list` no projeto
 | 036 | Remove `organizations_cnpj_check` — documentos reais de cliente (CPF/CNPJ/CAEPF e variações) continuavam sendo recusados mesmo com a regra mais permissiva da 034; o campo aceita qualquer valor agora (a UNIQUE de documento continua) |
 | 037 | `inv_insert` passa a aceitar também o papel Triagem (antes só admin/investigador) — Triagem pode abrir uma investigação a partir de uma denúncia; `inv_reports_insert` ganha a mesma exceção (só para vincular a denúncia de origem), sem tocar em `app.inv_writable()` — as outras quatro tabelas-filhas (equipe, entrevistas, achados, plano) e o desvincular continuam só admin/investigador |
 | 038 | `get_report_catalog()`: `legal_name`/`cnpj` do "Este canal é operado por..." (Etapa 1 do relato) passam a vir sempre da Sentinela (via `app.sentinela_org_id()`), nunca da empresa-cliente do link — antes, `/relato/<cliente>` mostrava a própria empresa-cliente como operadora do canal dela mesma. `slug`/`name` continuam vindo da organização do link (usados para `orgSlug` e para achar as categorias certas) |
+| 039 | Portal do Cliente: `portal_meetings`, `portal_meeting_actions` e `portal_files` (gravação, arquivo de reunião e material numa tabela só), com RLS — leitura por membro da empresa e só o publicado, escrita só de admin da Sentinela (`app.is_nexo_admin()`; `has_role(org,{admin})` não serve porque um admin da própria empresa-cliente passaria). Triggers de auditoria `portal.content_*` (só tipo e id) e `app.write_audit` com a lista branca ampliada |
+| 040 | `open_portal_file()` (SECURITY INVOKER, sob RLS) e o bucket privado `portal` (limite de 2 GB, sem SVG/HTML, sem policies em `storage.objects`) |
+
+### Portal do Cliente
+
+Cada empresa-cliente tem, no mesmo painel e no mesmo login, duas áreas: **Minhas Reuniões**
+(`/admin/reunioes`: resumo, ações, gravação e arquivos de cada reunião, da mais recente para a mais
+antiga) e **Materiais e Documentos** (`/admin/materiais`: Treinamento, CDN Conecta e Cartazes, com
+busca). Os dois itens ficam fora da grade de "Time e permissões" (`configurable: false` em
+`lib/admin/navItems.ts`): aparecem para todo papel, e o conteúdo é que é filtrado.
+
+- **Quem escreve:** só a equipe Nexo, em `/admin/clientes/<empresa>/portal` (botão "Gerenciar portal"
+  na página do cliente). A empresa vem da URL, nunca do cookie de organização ativa. Quem tem papel
+  Administração numa empresa-cliente só visualiza.
+- **Visibilidade:** reunião e material têm "visível no portal"; ações, gravação e arquivos de uma reunião
+  herdam a visibilidade dela. Rascunho só a Nexo vê. As telas do cliente filtram por organização **e**
+  por publicado explicitamente (a Nexo está em toda empresa e vê rascunho por RLS).
+- **Arquivos:** bucket `portal` privado. O navegador envia direto ao Storage com URL de envio assinada
+  (os bytes não passam pela Vercel); a server action de registro relê tamanho e tipo reais com
+  `storage.info`. Abrir/baixar passa por `/api/portal/files/<id>` (302 para URL assinada). `?inline=1`
+  só para vídeo, áudio, imagem e PDF (URL de 1 h, para o vídeo poder avançar); o resto sempre baixa.
+  Excluir arquivo ou reunião apaga o objeto do Storage antes da linha.
+- **Limite de tamanho:** o bucket aceita 2 GB, mas o **limite global do projeto** (Supabase → Storage →
+  Settings) manda por cima — num projeto novo é 50 MB, e um envio maior volta como `EntityTooLarge`.
+  Precisa ser elevado no painel. O envio é um PUT único, sem retomada.
+- **Fora do escopo:** notificação de conteúdo novo, cliente alterar o status de uma ação e copiar um
+  material para várias empresas de uma vez.
 
 ### Cadastrar uma empresa-cliente nova
 

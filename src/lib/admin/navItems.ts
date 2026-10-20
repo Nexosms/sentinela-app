@@ -38,6 +38,26 @@ export const NAV_ITEMS = [
     icon: "✓",
     defaultRoles: ["admin", "triagem", "investigador", "comite"],
   },
+  // Portal do Cliente. `configurable: false` tira os dois itens da grade de
+  // permissões (e portanto de `role_nav_permissions`, cujo CHECK de `nav_key`
+  // só conhece as chaves antigas) e os deixa visíveis a todo papel — o
+  // conteúdo já é filtrado por organização e por publicação.
+  {
+    key: "reunioes",
+    href: "/admin/reunioes",
+    label: "Minhas Reuniões",
+    icon: "◷",
+    defaultRoles: ["admin", "triagem", "investigador", "comite"],
+    configurable: false,
+  },
+  {
+    key: "materiais",
+    href: "/admin/materiais",
+    label: "Materiais e Documentos",
+    icon: "▣",
+    defaultRoles: ["admin", "triagem", "investigador", "comite"],
+    configurable: false,
+  },
   {
     key: "relatorios",
     href: "/admin/relatorios",
@@ -59,14 +79,22 @@ export const NAV_ITEMS = [
     icon: "⚙",
     defaultRoles: ["admin"],
   },
-] as const satisfies readonly { key: string; href: string; label: string; icon: string; defaultRoles: readonly AppRole[] }[];
+] as const satisfies readonly {
+  key: string;
+  href: string;
+  label: string;
+  icon: string;
+  defaultRoles: readonly AppRole[];
+  configurable?: boolean;
+}[];
 
 export type NavItemKey = (typeof NAV_ITEMS)[number]["key"];
 export type NavItemDef = (typeof NAV_ITEMS)[number];
 
-/** Tudo exceto "Visão geral": o que a grade de permissões mostra como coluna. */
+/** Tudo exceto "Visão geral" e o portal: o que a grade de permissões mostra como coluna. */
 export const CONFIGURABLE_NAV_ITEMS = NAV_ITEMS.filter(
-  (item): item is Exclude<NavItemDef, { key: "visao-geral" }> => item.key !== "visao-geral",
+  (item): item is Exclude<NavItemDef, { key: "visao-geral" | "reunioes" | "materiais" }> =>
+    item.key !== "visao-geral" && !("configurable" in item && item.configurable === false),
 );
 
 export const CONFIGURACOES_ITEM = NAV_ITEMS.find(item => item.key === "configuracoes")!;
@@ -81,6 +109,7 @@ export type NavOverrides = Partial<Record<AppRole, Partial<Record<string, boolea
  */
 export function isNavVisible(role: AppRole, item: NavItemDef, overrides: NavOverrides): boolean {
   if (role === "admin" || item.key === "visao-geral") return true;
+  if ("configurable" in item && item.configurable === false) return true;
   const override = overrides[role]?.[item.key];
   return override !== undefined ? override : (item.defaultRoles as readonly AppRole[]).includes(role);
 }
