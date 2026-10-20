@@ -38,6 +38,20 @@ export const NAV_ITEMS = [
     icon: "✓",
     defaultRoles: ["admin", "triagem", "investigador", "comite"],
   },
+  {
+    key: "relatorios",
+    href: "/admin/relatorios",
+    label: "Relatórios",
+    icon: "▤",
+    defaultRoles: ["admin", "comite"],
+  },
+  {
+    key: "auditoria",
+    href: "/admin/auditoria",
+    label: "Auditoria",
+    icon: "⌁",
+    defaultRoles: ["admin", "comite"],
+  },
   // Portal do Cliente. `configurable: false` tira os dois itens da grade de
   // permissões (e portanto de `role_nav_permissions`, cujo CHECK de `nav_key`
   // só conhece as chaves antigas) e os deixa visíveis a todo papel — o
@@ -57,20 +71,6 @@ export const NAV_ITEMS = [
     icon: "▣",
     defaultRoles: ["admin", "triagem", "investigador", "comite"],
     configurable: false,
-  },
-  {
-    key: "relatorios",
-    href: "/admin/relatorios",
-    label: "Relatórios",
-    icon: "▤",
-    defaultRoles: ["admin", "comite"],
-  },
-  {
-    key: "auditoria",
-    href: "/admin/auditoria",
-    label: "Auditoria",
-    icon: "⌁",
-    defaultRoles: ["admin", "comite"],
   },
   {
     key: "configuracoes",
