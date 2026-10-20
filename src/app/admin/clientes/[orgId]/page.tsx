@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import Link from "next/link";
 import { notFound } from "next/navigation";
 
 import AdminTopbar from "@/components/admin/AdminTopbar";
@@ -10,6 +11,7 @@ import { isNexoAdmin } from "@/lib/org/context";
 import { trocarOrganizacaoAtiva } from "@/lib/org/actions";
 import { createClient } from "@/lib/supabase/server";
 import { relatoUrl } from "@/lib/admin/clientes";
+import { portalAdminPath } from "@/lib/portal/portal";
 
 export const metadata: Metadata = { title: "Cliente" };
 
@@ -122,6 +124,19 @@ export default async function ClienteDetailPage({
           <p className="lead">Nenhum contato cadastrado ainda.</p>
         )}
         <ConvidarContatoForm orgId={org.id} />
+
+        <div className="list-head">
+          <span>Portal do cliente</span>
+        </div>
+        <p className="lead">
+          Reuniões (resumo, ações, gravação e arquivos) e a biblioteca de materiais que {org.trade_name}{" "}
+          enxerga no painel dela. Só o que você marcar como visível aparece para o cliente.
+        </p>
+        <div className="case-actions">
+          <Link className="primary-button portal-link-button" href={portalAdminPath(org.id)}>
+            Gerenciar portal <span>→</span>
+          </Link>
+        </div>
 
         <div className="list-head">
           <span>Equipe e permissões</span>
