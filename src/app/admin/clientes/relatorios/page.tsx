@@ -103,10 +103,12 @@ export default async function Page({
       <AdminTopbar eyebrow="NEXO" title="Relatórios mensais" />
       <section className="form-card">
         <span className="section-kicker">RELATÓRIO MENSAL DOS CLIENTES</span>
-        <h1>Confira e libere o relatório de cada empresa.</h1>
+        <h1>O relatório de cada empresa sai sozinho todo mês.</h1>
         <p className="lead">
-          No dia 1º de cada mês o sistema prepara um rascunho por empresa. O cliente só vê depois que você
-          liberar. Só indicadores — nenhum relato individual entra.
+          No dia 1º de cada mês o sistema gera e já libera o relatório do mês anterior de cada empresa. Aqui
+          você acompanha, abre para conferir e, se algo estiver errado, oculta — o cliente deixa de ver na
+          hora. O que você gerar à mão fica como rascunho até você liberar. Só indicadores — nenhum relato
+          individual entra.
         </p>
 
         {mensagem ? (

@@ -183,6 +183,28 @@ export async function listarEmpresasCliente(admin: AdminClient): Promise<Empresa
     .sort((a, b) => Number(b.ativa) - Number(a.ativa) || a.nome.localeCompare(b.nome, "pt-BR"));
 }
 
+/**
+ * Libera um rascunho ao cliente SEM pessoa por trás (o cron do dia 1º).
+ * `published_by` fica nulo e a trilha registra o ator como "sistema". A trava
+ * `is_published = false` faz a chamada ser idempotente: relatório já liberado
+ * (ou ocultado por alguém no meio do caminho) não é tocado.
+ */
+export async function publicarSnapshot(admin: AdminClient, id: string, orgId: string): Promise<boolean> {
+  const { data, error } = await admin
+    .from("report_snapshots")
+    .update({ is_published: true, published_at: new Date().toISOString(), published_by: null })
+    .eq("id", id)
+    .eq("org_id", orgId)
+    .eq("is_published", false)
+    .select("id")
+    .maybeSingle();
+  if (error || !data) {
+    console.error("[relatório mensal] liberar automaticamente: %s", error?.message ?? "sem retorno");
+    return false;
+  }
+  return true;
+}
+
 export type ResultadoGravacao =
   | { ok: true; id: string; criado: boolean }
   | { ok: false; motivo: "publicado" | "erro" };

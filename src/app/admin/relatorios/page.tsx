@@ -54,8 +54,8 @@ export default async function Page() {
             <small>AINDA NÃO HÁ RELATÓRIO</small>
             <h2>O primeiro relatório sai no início do próximo mês.</h2>
             <p>
-              Assim que a equipe Nexo conferir e liberar o relatório do mês, ele aparece aqui, pronto para
-              ler e baixar em PDF.
+              No dia 1º de cada mês o relatório do mês anterior é gerado e aparece aqui, pronto para ler e
+              baixar em PDF.
             </p>
           </div>
         ) : (

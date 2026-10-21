@@ -1,7 +1,12 @@
 import { timingSafeEqual } from "node:crypto";
 
 import { createAdminClient } from "@/lib/supabase/admin";
-import { gerarRelatorioMensal, gravarRascunho, listarEmpresasCliente } from "@/lib/admin/relatorioMensal";
+import {
+  gerarRelatorioMensal,
+  gravarRascunho,
+  listarEmpresasCliente,
+  publicarSnapshot,
+} from "@/lib/admin/relatorioMensal";
 import { MONTHLY_KIND, isMes, limitesDoMes, mesAnteriorAoAtual } from "@/lib/admin/relatorioMensalTipos";
 
 export const runtime = "nodejs";
@@ -9,12 +14,14 @@ export const dynamic = "force-dynamic";
 export const maxDuration = 300;
 
 /**
- * GET /api/cron/relatorio-mensal — dia 1º de cada mês, 07:00 em Brasília (vercel.json).
+ * GET /api/cron/relatorio-mensal — dias 1 a 3 de cada mês, 07:00 em Brasília (vercel.json).
  *
- * Gera, para cada empresa-cliente ativa, o relatório do MÊS ANTERIOR como
- * RASCUNHO. Nada chega ao cliente daqui: a equipe Nexo confere e libera em
- * /admin/clientes/relatorios. Rodar de novo é inofensivo — quem já tem relatório
- * do mês (rascunho ou publicado) é pulado.
+ * Gera, para cada empresa-cliente ativa, o relatório do MÊS ANTERIOR e já o
+ * LIBERA ao cliente (decisão da Nexo: sem conferência prévia; ela pode ocultar
+ * depois em /admin/clientes/relatorios). Roda também nos dias 2 e 3 porque a
+ * Vercel não repete um disparo que falhou — e rodar de novo é inofensivo: quem
+ * já tem relatório do mês (rascunho ou publicado) é pulado. Um rascunho que a
+ * Nexo deixou guardado à mão, portanto, NÃO é publicado pelo cron.
  *
  * `?mes=AAAA-MM` refaz um mês específico (útil após uma falha); sem ele vale o
  * mês anterior ao corrente em São Paulo.
@@ -56,8 +63,10 @@ export async function GET(request: Request): Promise<Response> {
   const jaTem = new Set((existentes ?? []).map(linha => linha.org_id));
 
   let gerados = 0;
+  let publicados = 0;
   let pulados = 0;
   const falhas: string[] = [];
+  const falhasAoLiberar: string[] = [];
 
   for (const empresa of empresas) {
     if (jaTem.has(empresa.id)) {
@@ -67,9 +76,16 @@ export async function GET(request: Request): Promise<Response> {
     try {
       const metrics = await gerarRelatorioMensal(admin, empresa.id, mes);
       const gravado = await gravarRascunho(admin, empresa.id, metrics, null);
-      if (gravado.ok) gerados += 1;
-      else if (gravado.motivo === "publicado") pulados += 1;
-      else falhas.push(empresa.id);
+      if (!gravado.ok) {
+        if (gravado.motivo === "publicado") pulados += 1;
+        else falhas.push(empresa.id);
+        continue;
+      }
+      gerados += 1;
+      // Libera ao cliente na hora; se a liberação falhar o rascunho fica e a
+      // Nexo libera à mão (ou o disparo do dia seguinte o pula, pois já existe).
+      if (gravado.criado && (await publicarSnapshot(admin, gravado.id, empresa.id))) publicados += 1;
+      else if (gravado.criado) falhasAoLiberar.push(empresa.id);
     } catch (error) {
       console.error("[cron] relatorio-mensal %s: %s", empresa.id, error instanceof Error ? error.message : error);
       falhas.push(empresa.id);
@@ -80,8 +96,10 @@ export async function GET(request: Request): Promise<Response> {
     mes,
     empresas: empresas.length,
     gerados,
+    publicados,
     pulados,
     falhas: falhas.length,
     empresasComFalha: falhas,
+    empresasSemLiberar: falhasAoLiberar,
   });
 }

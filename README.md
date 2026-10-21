@@ -273,10 +273,14 @@ busca). Os dois itens ficam fora da grade de "Time e permissões" (`configurable
 
 ### Relatório mensal do cliente
 
-Todo dia 1º, às 07h de Brasília, o cron `/api/cron/relatorio-mensal` (`vercel.json`, `CRON_SECRET`) gera como
-**rascunho** o relatório do mês anterior de cada empresa-cliente ativa (`?mes=AAAA-MM` refaz um mês; quem já
-tem relatório é pulado). A equipe Nexo confere e libera em `/admin/clientes/relatorios` (um a um ou todos;
-"Gerar" refaz um rascunho; "Ocultar" tira do cliente). O cliente vê em **Relatórios** (`/admin/relatorios` →
+Nos dias 1 a 3 de cada mês, às 07h de Brasília, o cron `/api/cron/relatorio-mensal` (`vercel.json`,
+`CRON_SECRET`) gera o relatório do mês anterior de cada empresa-cliente ativa e **já o libera** ao cliente,
+sem conferência prévia (decisão da Nexo). Roda também nos dias 2 e 3 porque a Vercel não repete um
+disparo que falhou; quem já tem relatório do mês é pulado (`?mes=AAAA-MM` refaz um mês). Um rascunho
+deixado à mão pela Nexo não é publicado pelo cron. Em `/admin/clientes/relatorios` a Nexo acompanha,
+abre para conferir e **oculta** (o cliente deixa de ver na hora); o que ela gera ali ("Gerar", "Gerar os
+que faltam") fica como rascunho até "Liberar". A liberação automática aparece na auditoria como
+`snapshot.published` com ator "sistema". O cliente vê em **Relatórios** (`/admin/relatorios` →
 `/admin/relatorios/mensal/AAAA-MM`), em dashboard na identidade do CDN, com "Baixar PDF" (impressão do
 navegador; folha A4 paisagem por página nomeada `@page mr`, sem afetar os outros relatórios).
 

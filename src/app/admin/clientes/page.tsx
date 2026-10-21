@@ -87,8 +87,8 @@ export default async function ClientesPage() {
           <span>Relatório mensal dos clientes</span>
         </div>
         <p className="lead">
-          No dia 1º o sistema prepara o relatório do mês de cada empresa (só indicadores, no visual do CDN).
-          Confira e libere para o cliente ver e baixar em PDF.
+          No dia 1º o sistema gera e libera sozinho o relatório do mês de cada empresa (só indicadores, no
+          visual do CDN), para o cliente ver e baixar em PDF. Aqui você acompanha e pode ocultar.
         </p>
         <div className="case-actions">
           <Link className="primary-button portal-link-button" href="/admin/clientes/relatorios">
