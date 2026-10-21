@@ -229,6 +229,7 @@ Aplicadas via MCP do Supabase, em ordem. `supabase migration list` no projeto
 | 040 | `open_portal_file()` (SECURITY INVOKER, sob RLS) e o bucket privado `portal` (limite de 2 GB, sem SVG/HTML, sem policies em `storage.objects`) |
 | 041 | `portal_meetings.transcript` — texto da aba Transcrição, com a mesma visibilidade e RLS da reunião |
 | 042 | `portal_folders` (pasta de materiais — campanha mensal do CDN Conecta) e `portal_files.folder_id`: a pasta tem a visibilidade e os arquivos dentro herdam; `audit_portal()` passa a cobrir a tabela |
+| 043 | Relatório mensal por cliente: `report_snapshots` ganha `is_published`/`published_at`/`published_by`; RLS reescrita (cliente lê só o publicado, a Nexo lê tudo e é a única que escreve — antes `admin`/`comite` de qualquer empresa inseriam); trigger `app.audit_snapshot()` (`snapshot.created`, `snapshot.published`, `snapshot.unpublished`, só tipo e período) e `app.write_audit` com a lista branca ampliada |
 
 ### Portal do Cliente
 
@@ -269,6 +270,31 @@ busca). Os dois itens ficam fora da grade de "Time e permissões" (`configurable
   Precisa ser elevado no painel. O envio é um PUT único, sem retomada.
 - **Fora do escopo:** notificação de conteúdo novo, cliente alterar o status de uma ação e copiar um
   material para várias empresas de uma vez.
+
+### Relatório mensal do cliente
+
+Todo dia 1º, às 07h de Brasília, o cron `/api/cron/relatorio-mensal` (`vercel.json`, `CRON_SECRET`) gera como
+**rascunho** o relatório do mês anterior de cada empresa-cliente ativa (`?mes=AAAA-MM` refaz um mês; quem já
+tem relatório é pulado). A equipe Nexo confere e libera em `/admin/clientes/relatorios` (um a um ou todos;
+"Gerar" refaz um rascunho; "Ocultar" tira do cliente). O cliente vê em **Relatórios** (`/admin/relatorios` →
+`/admin/relatorios/mensal/AAAA-MM`), em dashboard na identidade do CDN, com "Baixar PDF" (impressão do
+navegador; folha A4 paisagem por página nomeada `@page mr`, sem afetar os outros relatórios).
+
+- **Só indicadores:** recebidos no mês (com variação sobre o anterior), anônimos, críticos, em andamento,
+  encerrados, evolução de 12 meses, por nível de risco, por situação, categorias e prazos (triagem e
+  conclusão no SLA, mediana). Nunca protocolo, texto, envolvidos ou dado de quem relatou.
+- **Calculado uma vez e congelado** em `report_snapshots.metrics` (`lib/admin/relatorioMensal*.ts`, service
+  role, sempre com `org_id`). Não dá para calcular no login do cliente: o Comitê não lê `reports` pela RLS e
+  as `rel_*` são SECURITY INVOKER — daria zero. Regerar um relatório já publicado é recusado.
+- **Privacidade:** o total do mês e a série mensal são sempre exatos (decisão da Nexo). O resto é gravado
+  já protegido (`null` / `visivel:false`), então o número cru nunca chega ao navegador. Como o total é
+  público, "total − partes" revelaria a parte escondida; por isso cada subconjunto só aparece se ele **e o
+  seu complemento** forem zero ou ≥ `min_cell_size`, e cada divisão (risco, situação) é tudo-ou-nada.
+  Categorias são multirrótulo e são protegidas uma a uma. As regras são funções puras em
+  `relatorioMensalCalculo.ts`.
+- **Fora do escopo:** e-mail ou notificação de relatório novo (não há infraestrutura; a Nexo avisa por
+  fora), as outras seis telas do módulo Relatórios, e a Visão geral do Comitê, que mostra zeros pelo mesmo
+  motivo acima.
 
 ### Cadastrar uma empresa-cliente nova
 

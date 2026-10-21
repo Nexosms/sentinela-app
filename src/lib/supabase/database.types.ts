@@ -2006,36 +2006,52 @@ export type Database = {
           created_at: string
           generated_by: string | null
           id: string
+          is_published: boolean
           kind: string
           metrics: Json
           org_id: string
           period_end: string
           period_start: string
+          published_at: string | null
+          published_by: string | null
         }
         Insert: {
           created_at?: string
           generated_by?: string | null
           id?: string
+          is_published?: boolean
           kind: string
           metrics: Json
           org_id: string
           period_end: string
           period_start: string
+          published_at?: string | null
+          published_by?: string | null
         }
         Update: {
           created_at?: string
           generated_by?: string | null
           id?: string
+          is_published?: boolean
           kind?: string
           metrics?: Json
           org_id?: string
           period_end?: string
           period_start?: string
+          published_at?: string | null
+          published_by?: string | null
         }
         Relationships: [
           {
             foreignKeyName: "report_snapshots_generated_by_fkey"
             columns: ["generated_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "report_snapshots_published_by_fkey"
+            columns: ["published_by"]
             isOneToOne: false
             referencedRelation: "profiles"
             referencedColumns: ["id"]

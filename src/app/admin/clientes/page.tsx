@@ -84,6 +84,19 @@ export default async function ClientesPage() {
         </div>
 
         <div className="list-head">
+          <span>Relatório mensal dos clientes</span>
+        </div>
+        <p className="lead">
+          No dia 1º o sistema prepara o relatório do mês de cada empresa (só indicadores, no visual do CDN).
+          Confira e libere para o cliente ver e baixar em PDF.
+        </p>
+        <div className="case-actions">
+          <Link className="primary-button portal-link-button" href="/admin/clientes/relatorios">
+            Gerar e liberar relatórios <span>→</span>
+          </Link>
+        </div>
+
+        <div className="list-head">
           <span>Cadastrar empresa nova</span>
         </div>
         <ClienteForm />
