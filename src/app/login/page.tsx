@@ -26,7 +26,8 @@ export default async function LoginPage({
         <h1>Entrar no painel.</h1>
         <p>
           O acesso é concedido por convite. Se você deveria ter acesso e ainda não recebeu o
-          convite, procure a pessoa responsável pelo canal na sua organização.
+          convite, procure a pessoa responsável pelo canal na sua organização. Se já tem acesso e
+          esqueceu a senha, use “Esqueci minha senha” abaixo.
         </p>
         <LoginForm next={next} />
         <small>Este painel não é indexado e não pode ser acessado sem convite.</small>

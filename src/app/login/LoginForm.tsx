@@ -1,6 +1,7 @@
 "use client";
 
 import { useActionState } from "react";
+import Link from "next/link";
 import { signIn, type LoginState } from "@/lib/auth/actions";
 
 export default function LoginForm({ next }: { next?: string }) {
@@ -27,6 +28,11 @@ export default function LoginForm({ next }: { next?: string }) {
       <button className="primary-button" type="submit" disabled={pending}>
         {pending ? "Entrando…" : "Entrar"} <span>→</span>
       </button>
+      <p>
+        <Link className="quiet-link" href="/esqueci-senha">
+          Esqueci minha senha
+        </Link>
+      </p>
     </form>
   );
 }

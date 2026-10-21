@@ -300,6 +300,16 @@ navegador; folha A4 paisagem por página nomeada `@page mr`, sem afetar os outro
   fora), as outras seis telas do módulo Relatórios, e a Visão geral do Comitê, que mostra zeros pelo mesmo
   motivo acima.
 
+### Esqueci minha senha
+
+`/login` → "Esqueci minha senha" (`/esqueci-senha`) → e-mail com link → `/redefinir-senha` → nova senha.
+A server action `solicitarRedefinicao` (`lib/auth/actions.ts`) chama `resetPasswordForEmail` e responde
+**sempre a mesma mensagem**, exista a conta ou não, para a tela não revelar quem tem acesso (o erro real só
+vai para o log). `/redefinir-senha` reaproveita `convite/ConviteClient.tsx` com `modo="redefinicao"`: os
+mesmos três formatos de link, mas **sem** ativar vínculo (`/api/admin/invites/accept`) — redefinir senha não
+concede acesso — e, depois de salvar, encerra as outras sessões da conta (`signOut({ scope: "others" })`).
+Se o e-mail não chegar, a Nexo reenvia o convite em `/admin/clientes/<empresa>` (gera o link à mão).
+
 ### Cadastrar uma empresa-cliente nova
 
 Cada empresa-cliente é uma `organization` própria, com seu link exclusivo
@@ -460,6 +470,21 @@ Não dá para configurar por migração; precisam ser feitas no dashboard antes 
    Um `redirectTo` fora dessa lista é descartado silenciosamente pelo GoTrue —
    configurar `NEXT_PUBLIC_SITE_URL` na Vercel (ver "Observações operacionais"
    acima) não resolve sozinho se este passo não for feito também.
+
+5. **Authentication → Emails → SMTP Settings → Custom SMTP** (necessário para o e-mail chegar a clientes: o
+   remetente padrão do Supabase só entrega à equipe do projeto e tem limite de poucos e-mails/hora). Com o
+   Resend: domínio verificado (SPF/DKIM), host `smtp.resend.com`, porta `465`, usuário `resend`, senha = API
+   key (Sending access), remetente de um endereço do domínio verificado. Vale também para os convites.
+6. **Authentication → Emails → Templates → Reset Password**: o link precisa apontar para o NOSSO domínio com
+   o `token_hash` (prévias de WhatsApp/antivírus gastam o token de uso único se o link for o do Supabase):
+
+   ```html
+   <h2>Redefinir sua senha</h2>
+   <p>Recebemos um pedido para criar uma nova senha de acesso ao painel do Canal de Denúncias.</p>
+   <p><a href="{{ .SiteURL }}/redefinir-senha?token_hash={{ .TokenHash }}&type=recovery">Criar nova senha</a></p>
+   <p>O link vale por tempo limitado e serve uma vez só. Se você não pediu, ignore este e-mail: sua senha
+   continua a mesma.</p>
+   ```
 
 ### Avisos de advisor que são intencionais
 
