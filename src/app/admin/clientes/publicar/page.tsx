@@ -7,6 +7,7 @@ import { formatDocumento } from "@/lib/admin/configuracoes";
 import { todayInSaoPaulo } from "@/lib/admin/labels";
 import { publicEnv } from "@/lib/env";
 import { isNexoAdmin, listMyOrganizations } from "@/lib/org/context";
+import { VERSAO_BUILD } from "@/lib/versao";
 
 export const metadata: Metadata = { title: "Publicar para várias empresas" };
 
@@ -48,7 +49,12 @@ export default async function PublicarPage() {
           O arquivo sobe uma vez e cada empresa marcada recebe a sua própria cópia. Depois de publicado,
           cada cópia é editada ou apagada separadamente, dentro do portal de cada empresa.
         </p>
-        <PublicarForm empresas={empresas} defaultMonth={String(Number(mes))} defaultYear={ano} />
+        <PublicarForm
+          empresas={empresas}
+          defaultMonth={String(Number(mes))}
+          defaultYear={ano}
+          versao={VERSAO_BUILD}
+        />
       </section>
     </>
   );

@@ -17,6 +17,7 @@ import {
   resolveMime,
 } from "@/lib/portal/files";
 import { FOLDER_CATEGORY, MATERIAL_CATEGORIES, fromMonthYear } from "@/lib/portal/portal";
+import { VERSAO_BUILD } from "@/lib/versao";
 
 /**
  * Publicar o mesmo arquivo para VÁRIAS empresas de uma vez (só a equipe Nexo).
@@ -51,6 +52,11 @@ async function exigirNexo(): Promise<Contexto | { error: string }> {
   const user = await getAuthenticatedUser();
   if (!user) return { error: "Sessão expirada. Entre novamente." };
   return { supabase: await createClient(), userId: user.id };
+}
+
+/** Versão do servidor que está respondendo — a tela compara com a da página aberta. */
+export async function versaoDoServidor(): Promise<string> {
+  return VERSAO_BUILD;
 }
 
 /** Passo 1: caminho + token para enviar UMA vez à área temporária. Só metadados — os bytes vão direto ao Storage. */

@@ -6,6 +6,7 @@ import {
   copiarParaEmpresa,
   limparPublicacao,
   solicitarUploadPublicacao,
+  versaoDoServidor,
 } from "@/app/admin/clientes/publicar/actions";
 import { createClient } from "@/lib/supabase/client";
 import {
@@ -50,11 +51,14 @@ export default function PublicarForm({
   empresas,
   defaultMonth,
   defaultYear,
+  versao,
 }: {
   empresas: Empresa[];
   /** "1".."12" e o ano de hoje, calculados no servidor. */
   defaultMonth: string;
   defaultYear: string;
+  /** Versão do site que montou esta página; o servidor precisa ser da mesma. */
+  versao: string;
 }) {
   const [modo, setModo] = useState<"material" | "pasta">("material");
   const [arquivos, setArquivos] = useState<File[]>([]);
@@ -118,6 +122,23 @@ export default function PublicarForm({
 
   async function executar(repetir: boolean) {
     setErroGeral("");
+
+    // Aba aberta antes de uma atualização do site fala com o código antigo (e repete
+    // erros já corrigidos). Compara a versão da página com a do servidor antes de
+    // enviar qualquer byte.
+    try {
+      const servidor = await versaoDoServidor();
+      if (servidor !== versao) {
+        setErroGeral(
+          `Esta página está desatualizada (página: ${versao}, servidor: ${servidor}). Recarregue com Ctrl+F5 e tente de novo.`,
+        );
+        return;
+      }
+    } catch {
+      setErroGeral("Não foi possível falar com o servidor. Recarregue a página com Ctrl+F5 e tente de novo.");
+      return;
+    }
+
     setFase("rodando");
     const supabase = createClient();
     const orgs = repetir ? orgsAlvo : Array.from(selecionadas);
@@ -518,11 +539,13 @@ export default function PublicarForm({
         <button type="button" className="primary-button" disabled={!pronto} onClick={confirmarEPublicar}>
           Publicar em {selecionadas.size} empresa{selecionadas.size === 1 ? "" : "s"} <span>→</span>
         </button>
+        {erroGeral ? <span className="field-error-message">{erroGeral}</span> : null}
         {!pronto ? (
           <small className="portal-upload-status">
             Falta: {arquivos.length === 0 ? "escolher o arquivo" : selecionadas.size === 0 ? "marcar ao menos uma empresa" : "preencher os dados acima"}.
           </small>
         ) : null}
+        <small className="portal-upload-status">Versão da página: {versao}</small>
       </div>
     </>
   );
