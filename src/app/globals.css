@@ -467,3 +467,21 @@ form.inbox-tools{align-items:center;flex-wrap:wrap}
 .portal-bulk-list li.ok span{color:#287264}
 .portal-bulk-list li.erro,.portal-bulk-list li.ignorado{border-color:#e8c7c0}
 .portal-bulk-list li.erro span,.portal-bulk-list li.ignorado span{color:var(--danger)}
+
+/* Publicar para várias empresas */
+.portal-mode{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.portal-mode label{display:flex;flex-direction:column;gap:3px;padding:14px 16px;background:white;border:1px solid #d9e0dc;border-radius:11px;cursor:pointer}
+.portal-mode label.ativo{border-color:var(--teal);box-shadow:inset 0 0 0 1px var(--teal)}
+.portal-mode input{position:absolute;opacity:0;pointer-events:none}
+.portal-mode label:focus-within{outline:3px solid #e5b76e;outline-offset:2px}
+.portal-mode strong{font-size:14px}
+.portal-mode small{color:var(--muted);font-size:12px}
+.portal-pick-tools{display:flex;flex-wrap:wrap;gap:8px;align-items:center}
+.portal-pick-tools .portal-pick-search{flex:1 1 220px;min-height:44px;margin:0;color:var(--ink);background:white;border:1px solid #d9e0dc;font-size:13px}
+.portal-pick-list{display:grid;grid-template-columns:repeat(auto-fill,minmax(250px,1fr));gap:8px;max-height:420px;margin:0;padding:2px;overflow:auto;list-style:none}
+.portal-pick-list label{display:flex;align-items:center;gap:10px;min-height:52px;padding:8px 12px;background:white;border:1px solid #e4ebe6;border-radius:9px;cursor:pointer}
+.portal-pick-list label.marcada{background:#fdf1f0;border-color:var(--teal)}
+.portal-pick-list input{flex:0 0 auto;width:18px;height:18px;accent-color:var(--teal)}
+.portal-pick-list strong{display:block;font-size:13px;overflow-wrap:anywhere}
+.portal-pick-list small{display:block;margin-top:1px;color:var(--muted);font-size:11px}
+@media(max-width:620px){.portal-mode{grid-template-columns:1fr}.portal-pick-list{grid-template-columns:1fr}}

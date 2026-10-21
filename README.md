@@ -254,6 +254,16 @@ busca). Os dois itens ficam fora da grade de "Time e permissões" (`configurable
   → "Nova pasta"). Dentro dela se envia vários arquivos de uma vez, ou a pasta inteira do computador (subpastas
   entram todas na mesma pasta do portal, sem hierarquia). O cliente vê as pastas como cartões, em ordem de mês,
   e abre cada uma em `/admin/materiais/pastas/<id>`; a busca também acha arquivos dentro de pastas publicadas.
+- **Publicar para várias empresas** (`/admin/clientes/publicar`, botão na tela de Clientes): o arquivo sobe
+  UMA vez para `_publicacao/` no bucket `portal` e cada empresa marcada (uma a uma, nenhuma vem marcada)
+  recebe a sua própria cópia, feita dentro do Storage (`copy`), com a linha em `portal_files` apontando
+  para ela — apagar ou trocar o arquivo de uma empresa não mexe nas outras, e depois da publicação cada
+  cópia é editada separadamente. Dois modos: material solto, ou pasta do CDN Conecta (acha a pasta de mesmo
+  nome e mês da empresa ou cria). O trabalho é fatiado em UMA empresa por chamada
+  (`copiarParaEmpresa`), orquestrado pelo navegador, para não passar do tempo de uma função da Vercel.
+  Se alguma empresa falhar, os temporários ficam e dá para tentar de novo só nas que falharam. Se a aba for
+  fechada no meio, sobram arquivos em `_publicacao/` — não há limpeza automática; apague-os pelo painel
+  do Storage.
 - **Limite de tamanho:** o bucket aceita 2 GB, mas o **limite global do projeto** (Supabase → Storage →
   Settings) manda por cima — num projeto novo é 50 MB, e um envio maior volta como `EntityTooLarge`.
   Precisa ser elevado no painel. O envio é um PUT único, sem retomada.

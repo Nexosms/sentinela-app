@@ -71,6 +71,19 @@ export default async function ClientesPage() {
         </div>
 
         <div className="list-head">
+          <span>Publicar no portal de várias empresas</span>
+        </div>
+        <p className="lead">
+          Envie um arquivo (ou uma pasta de campanha do CDN Conecta) uma única vez e escolha, uma a
+          uma, as empresas que vão recebê-lo.
+        </p>
+        <div className="case-actions">
+          <Link className="primary-button portal-link-button" href="/admin/clientes/publicar">
+            Publicar para várias empresas <span>→</span>
+          </Link>
+        </div>
+
+        <div className="list-head">
           <span>Cadastrar empresa nova</span>
         </div>
         <ClienteForm />
