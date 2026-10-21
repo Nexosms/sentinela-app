@@ -1,5 +1,5 @@
 import { OPEN_STATUSES, RISK_LABEL, RISK_ORDER, STATUS_LABEL, STATUS_ORDER } from "@/lib/admin/labels";
-import type { Divisao, Indicadores, MonthlyMetrics } from "@/lib/admin/relatorioMensalTipos";
+import { somarMeses, type Divisao, type Indicadores, type MonthlyMetrics } from "@/lib/admin/relatorioMensalTipos";
 
 /**
  * A parte PURA do relatório mensal: recebe contagens exatas e devolve o que
@@ -122,6 +122,31 @@ export function calcularCategorias(
   const todas = [...acc.values()].filter(item => item.total > 0);
   const itens = todas.filter(item => item.total >= minimo).sort((a, b) => b.total - a.total);
   return { itens, ocultas: itens.length < todas.length };
+}
+
+/**
+ * Primeiro mês da empresa no canal: o do cadastro, no fuso dela — ou o do
+ * relato mais antigo, se houver um anterior (dado importado). Nunca depois do
+ * mês do relatório: gerar um mês anterior ao cadastro devolve só esse mês.
+ */
+export function mesDeInicio(
+  criadaEm: string,
+  fuso: string,
+  mesesComRelato: string[],
+  mes: string,
+): string {
+  const cadastro = new Intl.DateTimeFormat("en-CA", { year: "numeric", month: "2-digit", timeZone: fuso })
+    .format(new Date(criadaEm))
+    .slice(0, 7);
+  const candidatos = [cadastro, ...mesesComRelato].filter(m => m <= mes);
+  return candidatos.length > 0 ? candidatos.reduce((a, b) => (a < b ? a : b)) : mes;
+}
+
+/** Meses de `inicio` até `mes`, no máximo os 12 últimos, em ordem cronológica. */
+export function mesesDesde(inicio: string, mes: string): string[] {
+  const todos: string[] = [];
+  for (let m = mes; m >= inicio && todos.length < 12; m = somarMeses(m, -1)) todos.unshift(m);
+  return todos.length > 0 ? todos : [mes];
 }
 
 export type LinhaSla = {

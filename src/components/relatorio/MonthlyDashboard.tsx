@@ -143,20 +143,24 @@ export default function MonthlyDashboard({
           <small>RELATOS RECEBIDOS</small>
           <strong>{total}</strong>
           <span className="mr-card-nota">
-            <Variacao atual={total} anterior={anterior.total} rotuloAnterior={rotuloAnterior} />
+            {anterior ? (
+              <Variacao atual={total} anterior={anterior.total} rotuloAnterior={rotuloAnterior} />
+            ) : (
+              <span className="mr-var">Primeiro mês no canal</span>
+            )}
           </span>
         </article>
         <Card
           rotulo="ANÔNIMOS"
           valor={atual.anonimas}
           nota={pctTexto(atual.anonimas, total)}
-          anterior={indicadorAnterior(anterior, "anonimas")}
+          anterior={anterior ? indicadorAnterior(anterior, "anonimas") : null}
         />
         <Card
           rotulo="CASOS CRÍTICOS"
           valor={atual.criticos}
           nota="recebidos no mês"
-          anterior={indicadorAnterior(anterior, "criticos")}
+          anterior={anterior ? indicadorAnterior(anterior, "criticos") : null}
         />
         <Card
           rotulo="EM ANDAMENTO"
@@ -188,28 +192,41 @@ export default function MonthlyDashboard({
       <section className="mr-card-wide">
         <div className="mr-title">
           <small>EVOLUÇÃO</small>
-          <h2>Relatos recebidos nos últimos 12 meses</h2>
+          <h2>
+            {metrics.serie.length >= 12
+              ? "Relatos recebidos nos últimos 12 meses"
+              : `Relatos recebidos desde ${mesPorExtenso(metrics.serie[0].mes)}`}
+          </h2>
         </div>
-        <Columns serie={metrics.serie} destaque={metrics.mes} />
-        <details className="mr-tabela no-print">
-          <summary>Ver como tabela</summary>
-          <table>
-            <thead>
-              <tr>
-                <th>Mês</th>
-                <th>Relatos</th>
-              </tr>
-            </thead>
-            <tbody>
-              {metrics.serie.map(item => (
-                <tr key={item.mes}>
-                  <td>{mesCurto(item.mes)}</td>
-                  <td>{item.total}</td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </details>
+        {metrics.serie.length < 2 ? (
+          <p className="mr-rodape-card">
+            Este é o primeiro mês da empresa no canal. A evolução mês a mês aparece a partir do próximo
+            relatório.
+          </p>
+        ) : (
+          <>
+            <Columns serie={metrics.serie} destaque={metrics.mes} />
+            <details className="mr-tabela no-print">
+              <summary>Ver como tabela</summary>
+              <table>
+                <thead>
+                  <tr>
+                    <th>Mês</th>
+                    <th>Relatos</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {metrics.serie.map(item => (
+                    <tr key={item.mes}>
+                      <td>{mesCurto(item.mes)}</td>
+                      <td>{item.total}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </details>
+          </>
+        )}
       </section>
 
       {vazio ? null : (

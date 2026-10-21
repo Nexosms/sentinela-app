@@ -31,7 +31,9 @@ export function Columns({
   const A = 190;
   const base = 158;
   const topo = 24;
-  const passo = L / serie.length;
+  // Poucos meses (empresa nova) ficam centralizados, sem barras gigantes.
+  const passo = Math.min(L / serie.length, 64);
+  const margem = (L - passo * serie.length) / 2;
   const largura = Math.min(34, passo - 14);
 
   return (
@@ -44,7 +46,7 @@ export function Columns({
       <line x1="0" x2={L} y1={base} y2={base} stroke="#cfd5d2" strokeWidth="1" />
       {serie.map((item, i) => {
         const altura = item.total === 0 ? 0 : Math.max(4, ((base - topo) * item.total) / maximo);
-        const x = i * passo + (passo - largura) / 2;
+        const x = margem + i * passo + (passo - largura) / 2;
         const atual = item.mes === destaque;
         return (
           <g key={item.mes}>

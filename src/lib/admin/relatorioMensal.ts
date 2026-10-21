@@ -9,6 +9,8 @@ import {
   calcularIndicadores,
   calcularSerie,
   calcularTempos,
+  mesDeInicio,
+  mesesDesde,
   type LinhaCategoria,
   type LinhaMetrica,
 } from "@/lib/admin/relatorioMensalCalculo";
@@ -82,7 +84,7 @@ export async function gerarRelatorioMensal(
 ): Promise<MonthlyMetrics> {
   const { data: org, error: orgError } = await admin
     .from("organizations")
-    .select("trade_name, cnpj, min_cell_size")
+    .select("trade_name, cnpj, min_cell_size, created_at, timezone")
     .eq("id", orgId)
     .maybeSingle();
   if (orgError || !org) {
@@ -92,7 +94,6 @@ export async function gerarRelatorioMensal(
 
   const primeiro = somarMeses(mes, -12);
   const anterior = somarMeses(mes, -1);
-  const meses12 = Array.from({ length: 12 }, (_, i) => somarMeses(mes, i - 11));
 
   const linhas = await lerTudo<LinhaMetrica>(
     (de, ate) =>
@@ -122,6 +123,15 @@ export async function gerarRelatorioMensal(
   const doMes = (alvo: string) => linhas.filter(l => l.period_month.slice(0, 7) === alvo);
   const minimo = org.min_cell_size;
 
+  // O relatório não inventa meses em que a empresa ainda não estava no canal.
+  const inicio = mesDeInicio(
+    org.created_at,
+    org.timezone,
+    linhas.map(l => l.period_month.slice(0, 7)),
+    mes,
+  );
+  const mesesDaSerie = mesesDesde(inicio, mes);
+
   // `rel_sla` é a mesma função do painel (SECURITY INVOKER): com a chave de
   // serviço enxerga a empresa inteira, e já devolve cada célula suprimida.
   const { data: slaBruto, error: slaError } = await (
@@ -144,8 +154,9 @@ export async function gerarRelatorioMensal(
     empresa: { nome: org.trade_name, cnpj: formatCnpj(org.cnpj) },
     minimo,
     atual: calcularIndicadores(doMes(mes), minimo),
-    anterior: calcularIndicadores(doMes(anterior), minimo),
-    serie: calcularSerie(linhas, meses12),
+    anterior: anterior < inicio ? null : calcularIndicadores(doMes(anterior), minimo),
+    inicio,
+    serie: calcularSerie(linhas, mesesDaSerie),
     categorias: calcularCategorias(categorias, minimo),
     tempos: calcularTempos(slaSchema.parse(slaBruto)),
   });

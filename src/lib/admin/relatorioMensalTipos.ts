@@ -72,9 +72,11 @@ export const monthlyMetricsSchema = z.object({
   /** Limiar de proteção usado (organizations.min_cell_size). */
   minimo: z.number().int(),
   atual: indicadoresSchema,
-  /** Mês anterior, com a mesma proteção — para as setas de variação. */
-  anterior: indicadoresSchema,
-  /** Últimos 12 meses (incluindo o do relatório). Totais exatos. */
+  /** Mês anterior, com a mesma proteção — para as setas de variação. `null` no primeiro mês da empresa no canal. */
+  anterior: indicadoresSchema.nullable(),
+  /** Primeiro mês da empresa no canal (`AAAA-MM`): nada antes dele entra no relatório. */
+  inicio: z.string().regex(/^\d{4}-(0[1-9]|1[0-2])$/),
+  /** Até 12 meses, do mês de início da empresa (ou 11 meses antes) até o do relatório. Totais exatos. */
   serie: z.array(z.object({ mes: z.string(), total: z.number().int() })),
   categorias: z.object({
     itens: z.array(z.object({ rotulo: z.string(), grupo: z.string(), total: z.number().int() })),
