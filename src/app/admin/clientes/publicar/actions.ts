@@ -81,7 +81,8 @@ const destinoSchema = z.object({
   stagingPath: z.string().regex(STAGING_RE),
   filename: z.string().min(1).max(255),
   modo: z.enum(["material", "pasta"]),
-  category: z.enum(CATEGORY_KEYS).optional(),
+  // No modo pasta a categoria vai em branco (é sempre o CDN Conecta); só o material solto a usa.
+  category: z.union([z.enum(CATEGORY_KEYS), z.literal("")]).optional(),
   title: z.string().trim().max(200).optional(),
   description: z.string().trim().max(2000).optional(),
   publishedAt: z.union([z.literal(""), z.string().regex(DATA)]).optional(),
