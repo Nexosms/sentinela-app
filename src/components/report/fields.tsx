@@ -87,15 +87,19 @@ export function FieldTitle({
   label,
   info,
   required = true,
+  optionalBadge = false,
 }: {
   label: string;
   info: string;
   required?: boolean;
+  /** Mostra o selo "opcional" quando o campo não é obrigatório. */
+  optionalBadge?: boolean;
 }) {
   return (
     <span className="field-title">
       {label}
       {required && <b aria-hidden="true">*</b>}
+      {!required && optionalBadge && <em className="wz-opt">opcional</em>}
       <InfoHint label={label} info={info} />
     </span>
   );

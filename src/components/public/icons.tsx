@@ -172,3 +172,15 @@ export const UserCheck = ({ size }: IconProps) => (
     <path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2M9 11a4 4 0 1 0 0-8 4 4 0 0 0 0 8ZM16 11l2 2 4-4" />
   </Svg>
 );
+
+export const Mic = ({ size }: IconProps) => (
+  <Svg size={size}>
+    <rect x="9" y="3" width="6" height="11" rx="3" />
+    <path d="M5 11a7 7 0 0 0 14 0M12 18v3" />
+  </Svg>
+);
+export const ChevronDown = ({ size }: IconProps) => (
+  <Svg size={size}>
+    <path d="m6 9 6 6 6-6" />
+  </Svg>
+);
