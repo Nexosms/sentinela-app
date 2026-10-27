@@ -139,3 +139,25 @@ export function WhatsAppIcon({ size = 24 }: IconProps) {
     </svg>
   );
 }
+
+export const Alert = ({ size }: IconProps) => (
+  <Svg size={size}>
+    <path d="M12 3 2.5 20h19L12 3Z" />
+    <path d="M12 10v4M12 17.2v.1" />
+  </Svg>
+);
+export const Building = ({ size }: IconProps) => (
+  <Svg size={size}>
+    <path d="M4 21V7l8-4 8 4v14M9 21v-5h6v5M9 10h.01M15 10h.01M9 13h.01M15 13h.01" />
+  </Svg>
+);
+export const ExitIcon = ({ size }: IconProps) => (
+  <Svg size={size}>
+    <path d="M9 4H5v16h4M16 8l4 4-4 4M20 12H9" />
+  </Svg>
+);
+export const ArrowLeft = ({ size }: IconProps) => (
+  <Svg size={size}>
+    <path d="M19 12H5M11 6l-6 6 6 6" />
+  </Svg>
+);

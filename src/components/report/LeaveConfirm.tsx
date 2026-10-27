@@ -1,13 +1,14 @@
 "use client";
 
+import { ArrowLeft, ArrowRight } from "@/components/public/icons";
+
 /**
  * Confirmação de saída, dentro da página.
  *
  * Não é `window.confirm`: o diálogo nativo é um retângulo de sistema sem
  * nenhuma relação com o canal, aparece igual ao de um site malicioso e, em
  * várias plataformas, some sozinho. Aqui a pergunta é feita com o mesmo
- * vocabulário visual do resto do relato — `.privacy-note` e `.wizard-actions`,
- * ambos já existentes no design system.
+ * vocabulário visual do resto do relato (botões `.wz-*`).
  */
 export default function LeaveConfirm({
   onCancel,
@@ -24,12 +25,15 @@ export default function LeaveConfirm({
         rascunho, nem no navegador. Se sair agora, o relato será descartado e não poderá ser
         recuperado.
       </p>
-      <div className="wizard-actions">
-        <button type="button" className="back-button" onClick={onCancel}>
-          ← Continuar o relato
+      <div className="wz-actions">
+        <button type="button" className="wz-back" onClick={onCancel}>
+          <ArrowLeft size={18} /> Continuar o relato
         </button>
-        <button type="button" className="primary-button" onClick={onConfirm}>
-          Sair e descartar <span>→</span>
+        <button type="button" className="wz-continue" onClick={onConfirm}>
+          Sair e descartar
+          <span className="wz-seta">
+            <ArrowRight />
+          </span>
         </button>
       </div>
     </div>

@@ -1,9 +1,10 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useReducer, useRef } from "react";
+import { useCallback, useEffect, useMemo, useReducer, useRef, type CSSProperties } from "react";
 import { useRouter } from "next/navigation";
 
 import Brand from "@/components/brand/Brand";
+import { ArrowLeft, ArrowRight, Check, ExitIcon, Lock, ShieldCheck } from "@/components/public/icons";
 import type { CategoryOption } from "@/lib/report/catalog";
 import {
   fieldErrors,
@@ -14,6 +15,7 @@ import {
 } from "@/lib/report/schema";
 
 import LeaveConfirm from "./LeaveConfirm";
+import ListeningPanel from "./ListeningPanel";
 import ReceiptCard from "./ReceiptCard";
 import Step0Orientacoes from "./steps/Step0Orientacoes";
 import Step1Modalidade from "./steps/Step1Modalidade";
@@ -35,6 +37,8 @@ import {
   type WizardContextValue,
   type WizardState,
 } from "./wizardState";
+
+import "./wizard.css";
 
 const steps = ["Orientações", "Modalidade", "O que aconteceu", "Evidências", "Revisão"];
 
@@ -359,61 +363,90 @@ export default function ReportWizard({
   if (state.receipt) return <ReceiptCard receipt={state.receipt} />;
 
   const busy = state.sending || state.uploading;
+  // A linha de progresso vai do centro da 1ª etapa ao centro da 5ª (80% da largura).
+  const fill = `${(state.step / 4) * 80}%`;
 
   return (
     <WizardProvider value={contextValue}>
-      <main className="wizard-shell">
-        <header className="wizard-header">
+      <main className="wz">
+        <header className="wz-header">
           <Brand
             onClick={event => {
               event.preventDefault();
               leave();
             }}
           />
-          <span>RELATO SEGURO · ETAPA {state.step + 1} DE 5</span>
-          <button type="button" className="quiet-link" onClick={leave}>
-            Sair
+          <span className="wz-stepchip">
+            <Lock size={15} /> RELATO SEGURO · ETAPA {state.step + 1} DE 5
+          </span>
+          <button type="button" className="wz-exit" onClick={leave}>
+            <ExitIcon size={18} /> Sair
           </button>
         </header>
-        <div className="wizard-progress" aria-label={`Etapa ${state.step + 1} de 5`}>
-          {steps.map((label, index) => (
-            <span key={label} className={index <= state.step ? "active" : ""}>
-              <i>{index < state.step ? "✓" : index + 1}</i>
-              <b>{label}</b>
-            </span>
-          ))}
+        <nav
+          className="wz-progress"
+          aria-label={`Etapa ${state.step + 1} de 5`}
+          style={{ "--wz-fill": fill } as CSSProperties}
+        >
+          <ol>
+            {steps.map((label, index) => (
+              <li
+                key={label}
+                className={index < state.step ? "done" : index === state.step ? "on" : ""}
+                aria-current={index === state.step ? "step" : undefined}
+              >
+                <i>{index < state.step ? <Check size={18} /> : index + 1}</i>
+                <b>{label}</b>
+              </li>
+            ))}
+          </ol>
+        </nav>
+        <p className="wz-step-m">
+          Etapa {state.step + 1} de 5 · <b>{steps[state.step]}</b>
+        </p>
+        <div className="wz-body">
+          <ListeningPanel />
+          <section className="form-card wz-card">
+            {state.leaving ? (
+              <LeaveConfirm
+                onCancel={() => dispatch({ type: "leaving", leaving: false })}
+                onConfirm={() => router.push("/")}
+              />
+            ) : (
+              <>
+                {state.step === 0 && <Step0Orientacoes />}
+                {state.step === 1 && <Step1Modalidade />}
+                {state.step === 2 && <Step2OQueAconteceu />}
+                {state.step === 3 && <Step3Evidencias />}
+                {state.step === 4 && <Step4Revisao />}
+                {state.submitError && <div className="form-error">{state.submitError}</div>}
+                <p className="wz-note-m">
+                  <ShieldCheck size={16} /> Nada é enviado até você confirmar, na última etapa.
+                </p>
+                <div className="wz-actions">
+                  <button type="button" className="wz-back" onClick={back}>
+                    <ArrowLeft size={18} /> {state.step === 0 ? "Voltar ao início" : "Voltar"}
+                  </button>
+                  {state.step < 4 ? (
+                    <button type="button" className="wz-continue" onClick={next} disabled={busy}>
+                      {state.uploading ? "Enviando anexos…" : "Continuar"}
+                      <span className="wz-seta">
+                        <ArrowRight />
+                      </span>
+                    </button>
+                  ) : (
+                    <button type="button" className="wz-continue" onClick={submit} disabled={busy}>
+                      {state.sending ? "Enviando com segurança…" : "Confirmar e enviar"}
+                      <span className="wz-seta">
+                        <ArrowRight />
+                      </span>
+                    </button>
+                  )}
+                </div>
+              </>
+            )}
+          </section>
         </div>
-        <section className="form-card">
-          {state.leaving ? (
-            <LeaveConfirm
-              onCancel={() => dispatch({ type: "leaving", leaving: false })}
-              onConfirm={() => router.push("/")}
-            />
-          ) : (
-            <>
-              {state.step === 0 && <Step0Orientacoes />}
-              {state.step === 1 && <Step1Modalidade />}
-              {state.step === 2 && <Step2OQueAconteceu />}
-              {state.step === 3 && <Step3Evidencias />}
-              {state.step === 4 && <Step4Revisao />}
-              {state.submitError && <div className="form-error">{state.submitError}</div>}
-              <div className="wizard-actions">
-                <button type="button" className="back-button" onClick={back}>
-                  ← {state.step === 0 ? "Voltar ao início" : "Voltar"}
-                </button>
-                {state.step < 4 ? (
-                  <button type="button" className="primary-button" onClick={next} disabled={busy}>
-                    {state.uploading ? "Enviando anexos…" : "Continuar"} <span>→</span>
-                  </button>
-                ) : (
-                  <button type="button" className="primary-button" onClick={submit} disabled={busy}>
-                    {state.sending ? "Enviando com segurança…" : "Confirmar e enviar"} <span>→</span>
-                  </button>
-                )}
-              </div>
-            </>
-          )}
-        </section>
       </main>
     </WizardProvider>
   );
