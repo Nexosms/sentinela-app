@@ -161,3 +161,14 @@ export const ArrowLeft = ({ size }: IconProps) => (
     <path d="M19 12H5M11 6l-6 6 6 6" />
   </Svg>
 );
+
+export const EyeOff = ({ size }: IconProps) => (
+  <Svg size={size}>
+    <path d="M3 3l18 18M10.6 6.2A9.8 9.8 0 0 1 12 6c6.4 0 10 6 10 6a17 17 0 0 1-3.2 3.9M6.6 6.7C3.6 8.5 2 12 2 12s3.6 6 10 6a9.6 9.6 0 0 0 4-.9M9.9 9.9a3 3 0 0 0 4.2 4.2" />
+  </Svg>
+);
+export const UserCheck = ({ size }: IconProps) => (
+  <Svg size={size}>
+    <path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2M9 11a4 4 0 1 0 0-8 4 4 0 0 0 0 8ZM16 11l2 2 4-4" />
+  </Svg>
+);

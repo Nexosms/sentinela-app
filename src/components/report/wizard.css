@@ -91,12 +91,40 @@
 .wz-continue:hover:not(:disabled) .wz-seta svg{transform:translateX(3px)}
 .wz-back:focus-visible,.wz-continue:focus-visible,.wz-exit:focus-visible{outline:3px solid #e5b76e;outline-offset:3px}
 
+/* etapa 2: modalidade */
+.wz-modos{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:16px;margin-top:22px}
+.wz-modo{position:relative;display:flex;flex-direction:column;align-items:flex-start;gap:10px;padding:24px 24px 20px;text-align:left;cursor:pointer;background:#fff;border:1.5px solid rgba(28,25,23,.12);border-radius:22px;box-shadow:0 12px 30px -22px rgba(120,60,40,.5);transition:transform .25s,border-color .25s,box-shadow .25s,background-color .25s}
+.wz-modo:hover{transform:translateY(-3px);border-color:rgba(216,31,24,.4);box-shadow:0 20px 36px -20px rgba(216,31,24,.4)}
+.wz-modo.sel{background:#fff8f5;border-color:#d81f18;box-shadow:0 0 0 5px rgba(216,31,24,.1),0 20px 40px -22px rgba(216,31,24,.5)}
+.wz-modo:has(input:focus-visible){outline:3px solid #e5b76e;outline-offset:3px}
+.wz-modo input{position:absolute;inset:0;width:100%;height:100%;margin:0;opacity:0;cursor:pointer}
+.wz-modo-mark{position:absolute;right:18px;top:18px;display:grid;place-items:center;width:26px;height:26px;color:#fff;background:#fff;border:2px solid rgba(28,25,23,.18);border-radius:50%;transition:background-color .25s,border-color .25s}
+.wz-modo-mark svg{opacity:0;transform:scale(.4);transition:opacity .25s,transform .25s}
+.wz-modo.sel .wz-modo-mark{background:#d81f18;border-color:#d81f18}
+.wz-modo.sel .wz-modo-mark svg{opacity:1;transform:none}
+.wz-mi{display:grid;place-items:center;width:50px;height:50px;border-radius:15px}
+.wz-modo-title{margin-top:6px;font:800 1.25rem/1.2 var(--font-display),sans-serif;letter-spacing:-.02em;color:#1c1917}
+.wz-modo-text{font-size:.875rem;line-height:1.55;color:#57534e}
+.wz-modo-tag{margin-top:auto;padding-top:6px;font:600 .66rem var(--font-geist-mono),monospace;letter-spacing:.12em;color:#c91a13}
+
+.wz-ident{display:grid;grid-template-rows:1fr;margin-top:22px;transition:grid-template-rows .4s cubic-bezier(.2,.7,.2,1),opacity .3s,margin-top .3s}
+.wz-ident.closed{grid-template-rows:0fr;margin-top:0;opacity:0}
+.wz-ident-in{overflow:hidden;min-height:0}
+.wz-fields{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:14px;margin:0}
+.wz-fields label{display:flex;flex-direction:column;gap:7px;font:600 .81rem var(--font-geist-sans),sans-serif;color:#44403c}
+.wz .wz-input{width:100%;height:50px;padding:0 16px;font:400 .94rem var(--font-geist-sans),sans-serif;color:#1c1917;background:#fff;border:1.5px solid rgba(28,25,23,.14);border-radius:14px;outline:none;transition:border-color .2s,box-shadow .2s}
+.wz .wz-input:focus{border-color:#d81f18;box-shadow:0 0 0 4px rgba(216,31,24,.12)}
+.wz .field-error .wz-input{border-color:#b7443e;box-shadow:0 0 0 4px rgba(183,68,62,.1)}
+.wz-hint{margin:8px 2px 0;font-size:.78rem;color:#78716c}
+.wz-sigilo{display:flex;align-items:flex-start;gap:10px;margin:12px 0 0;padding:12px 14px;font-size:.81rem;line-height:1.5;color:#57534e;background:#f6f1ea;border:1px solid rgba(28,25,23,.07);border-radius:14px}
+.wz-sigilo svg{flex:none;margin-top:1px;color:#c91a13}
+
 @keyframes wz-pulse{0%,100%{transform:translate(-50%,-50%) scale(.97);opacity:.8}50%{transform:translate(-50%,-50%) scale(1.05);opacity:1}}
 @keyframes wz-float{0%,100%{transform:translate(-50%,-50%) translateY(0)}50%{transform:translate(-50%,-50%) translateY(-6px)}}
 @keyframes wz-bar{0%,100%{transform:scaleY(.45)}50%{transform:scaleY(1)}}
 @media (prefers-reduced-motion:reduce){
   .wz-ring,.wz-orb,.wz-wave i{animation:none}
-  .wz-progress ol::after,.wz-guide,.wz-continue,.wz-seta svg{transition:none}
+  .wz-progress ol::after,.wz-guide,.wz-continue,.wz-seta svg,.wz-modo,.wz-ident{transition:none}
 }
 
 /* ── tablet e celular ──────────────────────────────────────────────────── */
@@ -123,6 +151,9 @@
   .wz-aside p{max-width:300px;font-size:.875rem}
   .wz-safe{display:none}
   .wz-guides{grid-template-columns:1fr}
+  .wz-modos{grid-template-columns:1fr}
+  .wz-fields{grid-template-columns:1fr}
+  .wz-modo{padding:20px 18px 16px}
   .wz .wz-card{padding:26px 20px 22px;border-radius:24px}
   .wz-note-m{display:flex;align-items:center;gap:8px;margin:14px 2px 0;font-size:.78rem;color:#78716c}
   .wz-note-m svg{flex:none;color:#c91a13}
