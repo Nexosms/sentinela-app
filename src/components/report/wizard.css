@@ -244,7 +244,7 @@
   .wz-progress li b{display:none}
   .wz-step-m{display:block;margin:12px 0 0;text-align:center;font-size:.84rem;color:#78716c}
   .wz-step-m b{color:#1c1917}
-  .wz-body{grid-template-columns:1fr;gap:6px;margin-top:6px}
+  .wz-body{grid-template-columns:minmax(0,1fr);gap:6px;margin-top:6px}
   .wz-aside{position:static;padding-top:0;gap:6px}
   .wz-stage{width:240px;height:150px}
   .wz-r1{width:96px;height:96px}.wz-r2{width:140px;height:140px}.wz-r3{width:186px;height:186px}
@@ -261,6 +261,11 @@
   .wz-g2,.wz-cats,.wz-switches{grid-template-columns:1fr}
   .wz-tabs{flex-direction:column}
   .wz-sub{margin-left:0}
+  .wz-chips{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}
+  .wz-chip{display:flex;align-items:center;justify-content:center;min-height:54px;padding:10px 12px;text-align:center;white-space:normal;line-height:1.25;border-radius:16px}
+  .wz-sec h2 .field-title,.wz-sec legend .field-title{display:block;flex:1;min-width:0}
+  .wz-sec h2 .field-title>b,.wz-sec legend .field-title>b{margin-left:5px}
+  .wz-sec h2 .info-hint-holder,.wz-sec legend .info-hint-holder{margin-left:6px;vertical-align:middle}
   .wz-mic{width:100%;justify-content:center}
   .wz-dictating{flex-wrap:wrap}
   .wz-dictating-wave{display:none}
