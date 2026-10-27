@@ -1,5 +1,6 @@
 import Link from "next/link";
 
+import "@/app/home.css";
 import Brand from "@/components/brand/Brand";
 import AccessibilityToggle from "./AccessibilityToggle";
 import { Globe } from "./icons";

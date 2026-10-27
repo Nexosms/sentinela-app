@@ -67,33 +67,6 @@ export default function Hero() {
           <span>Em emergências, procure o 190, 192 ou uma rede de apoio próxima.</span>
         </div>
       </div>
-
-      <nav className="hm-steps" aria-label="Como funciona">
-        <span className="hm-steps-kicker">COMO FUNCIONA</span>
-        <a className="hm-step hm-step-on" href="#como-funciona">
-          <b>01</b>
-          <span>
-            <strong>Conte o que aconteceu</strong>
-            <small>Com as suas palavras</small>
-          </span>
-        </a>
-        <i className="hm-step-link" aria-hidden="true" />
-        <a className="hm-step" href="#como-funciona">
-          <b>02</b>
-          <span>
-            <strong>Guarde seu protocolo</strong>
-            <small>Código e chave privada</small>
-          </span>
-        </a>
-        <i className="hm-step-link hm-step-link-dim" aria-hidden="true" />
-        <a className="hm-step" href="#como-funciona">
-          <b>03</b>
-          <span>
-            <strong>Acompanhe com segurança</strong>
-            <small>Sem abrir conta</small>
-          </span>
-        </a>
-      </nav>
     </section>
   );
 }

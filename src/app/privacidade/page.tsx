@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import LegalShell from "@/components/public/LegalShell";
+import { CONTACT_PHONE_LOCAL } from "@/lib/contact";
 
 export const metadata: Metadata = {
   title: "Privacidade",
@@ -47,7 +48,7 @@ export default function PrivacidadePage() {
       <p>
         <strong>Seus direitos.</strong> Quem relata de forma identificada pode solicitar acesso,
         correção ou eliminação dos próprios dados, dentro dos limites que preservam a integridade
-        de uma apuração em andamento. Pedidos podem ser feitos pelo telefone (75) 9948-9071.
+        de uma apuração em andamento. Pedidos podem ser feitos pelo telefone {CONTACT_PHONE_LOCAL}.
       </p>
       <p>
         Os dados são armazenados em infraestrutura de nuvem com criptografia em trânsito e em

@@ -12,7 +12,7 @@ export default function LegalShell({
   children: ReactNode;
 }) {
   return (
-    <main className="public-shell">
+    <main className="public-shell home">
       <PublicHeader />
       <section className="how-section">
         <span className="section-kicker">{kicker}</span>
