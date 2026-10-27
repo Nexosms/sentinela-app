@@ -1,6 +1,6 @@
 export default function HowItWorks() {
   return (
-    <section className="how-section">
+    <section className="how-section" id="como-funciona">
       <span className="section-kicker">COMO FUNCIONA</span>
       <h2>Você mantém o controle.</h2>
       <div className="how-grid">

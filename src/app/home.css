@@ -1,0 +1,163 @@
+/* ───────────────────────────────────────────────────────────────────────────
+   Tela inicial (home) — "escuta e acolhimento".
+   Tudo escopado em `.home` / `.hm-*`: o resto do site (formulário de relato,
+   acompanhamento, painel) não é tocado por este arquivo.
+
+   Tamanhos de texto em `rem`, para o botão "Acessibilidade" (que muda o `font-size`
+   do <html>) continuar ampliando a página. Movimento sempre sutil e desligado
+   com `prefers-reduced-motion`.
+   ─────────────────────────────────────────────────────────────────────────── */
+
+.home.public-shell{position:relative;isolation:isolate;color:#1c1917;background:#fbf6f0}
+.home.public-shell::before{content:"";position:absolute;inset:0;z-index:-2;pointer-events:none;background:
+  radial-gradient(760px 560px at 84% 24%,rgba(255,205,190,.75),transparent 70%),
+  radial-gradient(620px 460px at 8% 0%,rgba(255,232,214,.9),transparent 70%),
+  radial-gradient(520px 380px at 60% 900px,rgba(255,214,204,.55),transparent 70%)}
+.home.public-shell::after{content:"";position:absolute;inset:0 0 auto 0;height:900px;z-index:-1;opacity:.5;pointer-events:none;background-image:radial-gradient(rgba(120,80,60,.1) 1px,transparent 1.2px);background-size:22px 22px;-webkit-mask-image:linear-gradient(180deg,#000,transparent 75%);mask-image:linear-gradient(180deg,#000,transparent 75%)}
+
+/* ── cabeçalho ─────────────────────────────────────────────────────────── */
+.hm-header{position:relative;display:flex;align-items:center;justify-content:space-between;height:84px;padding:0 clamp(20px,5vw,72px)}
+.hm-header .brand{color:#1c1917}
+.hm-nav{display:flex;align-items:center;gap:6px;font-size:.906rem;color:#44403c}
+.hm-nav .hm-nav-link,.hm-nav .text-button{display:inline-flex;align-items:center;gap:8px;margin:0;padding:10px 16px;color:inherit;font:inherit;background:transparent;border:0;border-radius:12px;text-decoration:none;cursor:pointer;transition:background-color .2s,color .2s}
+.hm-nav .hm-nav-link:hover,.hm-nav .text-button:hover{color:#1c1917;background:rgba(255,255,255,.7)}
+.hm-nav .language-button,.hm-menu-panel .language-button{display:inline-flex;align-items:center;gap:8px;margin-left:8px;padding:10px 16px;color:#292524;font:500 .906rem var(--font-geist-sans),sans-serif;background:rgba(255,255,255,.8);border:1px solid rgba(28,25,23,.1);border-radius:12px;box-shadow:0 1px 2px rgba(28,25,23,.05);cursor:pointer;transition:background-color .2s,transform .2s}
+.hm-nav .language-button:hover{background:#fff}
+.hm-menu{display:none;position:relative}
+
+/* ── grade principal ───────────────────────────────────────────────────── */
+.hm-hero{position:relative;display:grid;grid-template-columns:minmax(0,1fr) 560px;grid-template-areas:"copy scene" "copy risk" "steps steps";grid-template-rows:auto auto auto;column-gap:48px;align-content:space-between;align-items:center;min-height:calc(100svh - 84px);padding:12px clamp(20px,5vw,72px) 28px}
+.hm-copy{grid-area:copy;display:flex;flex-direction:column;gap:26px;max-width:660px}
+.hm-scene{grid-area:scene;position:relative;justify-self:end;width:560px;height:540px}
+.hm-risk{grid-area:risk}
+.hm-steps{grid-area:steps}
+
+.hm-pill{align-self:flex-start;display:inline-flex;align-items:center;gap:10px;padding:8px 16px 8px 12px;color:#44403c;font-size:.8rem;background:rgba(255,255,255,.8);border:1px solid rgba(28,25,23,.09);border-radius:999px;box-shadow:0 6px 20px -10px rgba(120,60,40,.3)}
+.hm-pill i{position:relative;width:9px;height:9px;border-radius:50%;background:#16a34a}
+.hm-pill i::after{content:"";position:absolute;inset:-5px;border-radius:50%;border:1.5px solid rgba(22,163,74,.45);animation:hm-ping 2.6s ease-out infinite}
+
+.hm-copy h1{margin:0;font:800 clamp(2.75rem,5.6vw,5rem)/1 var(--font-display),sans-serif;letter-spacing:-.04em;color:#1c1917}
+.hm-copy h1 em{padding-right:6px;font-style:italic;color:#d81f18;background:linear-gradient(100deg,#d81f18,#f0663d);-webkit-background-clip:text;background-clip:text;-webkit-text-fill-color:transparent}
+.hm-lead{margin:0;max-width:560px;font-size:1.19rem;line-height:1.62;color:#57534e}
+
+.hm-cta{display:flex;align-items:center;gap:14px;margin-top:2px}
+.hm-btn{display:inline-flex;align-items:center;gap:14px;height:62px;text-decoration:none;font:700 1.06rem var(--font-geist-sans),sans-serif;border-radius:18px;transition:transform .2s ease,box-shadow .25s ease,background-color .2s,border-color .2s}
+.hm-btn:active{transform:translateY(0) scale(.985)}
+.hm-btn-primary{padding:0 12px 0 26px;color:#fff;background:linear-gradient(180deg,#e2342b,#c91a13);box-shadow:0 18px 36px -12px rgba(216,31,24,.65),0 2px 0 rgba(255,255,255,.28) inset,0 0 0 6px rgba(216,31,24,.1);animation:hm-glow 3.2s ease-in-out infinite}
+.hm-btn-primary:hover{transform:translateY(-2px);box-shadow:0 22px 42px -12px rgba(216,31,24,.75),0 2px 0 rgba(255,255,255,.28) inset,0 0 0 9px rgba(216,31,24,.1);animation:none}
+.hm-btn-arrow{display:grid;place-items:center;width:40px;height:40px;border-radius:12px;background:rgba(255,255,255,.2)}
+.hm-btn-arrow svg{transition:transform .2s ease}
+.hm-btn-primary:hover .hm-btn-arrow svg{transform:translateX(3px)}
+.hm-btn-secondary{padding:0 24px;gap:12px;color:#292524;font-weight:600;font-size:1rem;background:rgba(255,255,255,.85);border:1px solid rgba(28,25,23,.12);box-shadow:0 8px 22px -14px rgba(28,25,23,.4)}
+.hm-btn-secondary svg{color:#c91a13}
+.hm-btn-secondary:hover{transform:translateY(-2px);background:#fff;border-color:rgba(216,31,24,.35)}
+
+.hm-micro{display:flex;align-items:center;gap:9px;margin:-2px 0 0;font-size:.875rem;color:#78716c}
+.hm-trust{display:flex;flex-wrap:wrap;gap:10px;margin:6px 0 0;padding:0;list-style:none}
+.hm-trust li{display:flex;align-items:center;gap:9px;padding:9px 14px;font-size:.84rem;color:#44403c;background:rgba(255,255,255,.65);border:1px solid rgba(28,25,23,.08);border-radius:12px}
+.hm-trust svg{color:#c91a13;flex:none}
+
+/* ── cena de escuta ────────────────────────────────────────────────────── */
+.hm-stage{position:absolute;inset:0;pointer-events:none}
+.hm-ring{position:absolute;left:50%;top:50%;border-radius:50%;transform:translate(-50%,-50%);animation:hm-pulse 5.4s ease-in-out infinite}
+.hm-r1{width:250px;height:250px;border:1.5px solid rgba(216,31,24,.34);background:radial-gradient(circle,rgba(255,255,255,.7),rgba(255,226,214,.35))}
+.hm-r2{width:340px;height:340px;border:1.5px solid rgba(216,31,24,.24);animation-delay:.9s}
+.hm-r3{width:430px;height:430px;border:1.5px solid rgba(216,31,24,.15);animation-delay:1.8s}
+.hm-r4{width:520px;height:520px;border:1.5px dashed rgba(216,31,24,.12);animation-delay:2.7s}
+.hm-orb{position:absolute;left:50%;top:50%;display:grid;place-items:center;width:176px;height:176px;border-radius:50%;transform:translate(-50%,-50%);background:linear-gradient(160deg,#fff,#fff1ea);box-shadow:0 30px 60px -20px rgba(216,31,24,.5),0 0 0 10px rgba(255,255,255,.55),0 0 0 11px rgba(216,31,24,.14);animation:hm-float 6s ease-in-out infinite}
+.hm-wave{position:absolute;left:50%;bottom:26px;display:flex;align-items:center;gap:5px;height:56px;transform:translateX(-50%)}
+.hm-wave i{display:block;width:5px;border-radius:3px;background:linear-gradient(180deg,#e2342b,#f2a07f);transform-origin:center;animation:hm-bar 1.6s ease-in-out infinite}
+
+.hm-card{position:absolute;display:flex;gap:12px;padding:14px 18px 14px 14px;background:rgba(255,255,255,.84);border:1px solid rgba(255,255,255,.9);border-radius:18px;box-shadow:0 24px 50px -22px rgba(120,60,40,.45),0 1px 0 rgba(255,255,255,.9) inset;-webkit-backdrop-filter:blur(14px);backdrop-filter:blur(14px);animation:hm-enter .9s cubic-bezier(.2,.7,.2,1) both}
+.hm-card-icon{display:grid;place-items:center;width:40px;height:40px;flex:none;border-radius:12px}
+.hm-tint-red{color:#c91a13;background:#ffe9e3}
+.hm-tint-green{color:#15803d;background:#e3f5ea}
+.hm-quote{left:-40px;top:70px;width:340px;align-items:flex-start}
+.hm-quote .hm-card-icon{margin-top:2px}
+.hm-quote blockquote{margin:0;font:700 .97rem/1.35 var(--font-display),sans-serif;letter-spacing:-.01em;color:#1c1917}
+.hm-quote p{margin:3px 0 0;font-size:.78rem;color:#78716c}
+.hm-proto{right:-18px;bottom:96px;align-items:center;animation-delay:.25s}
+.hm-proto strong{display:block;font-size:.875rem;color:#1c1917}
+.hm-proto p{margin:2px 0 0;font-size:.78rem;color:#78716c}
+
+/* ── aviso de risco ────────────────────────────────────────────────────── */
+.hm-risk{display:flex;align-items:center;justify-content:center;gap:14px;width:560px;justify-self:end;margin-top:4px;font-size:.84rem;line-height:1.45;color:#57534e}
+.hm-risk-icon{display:grid;place-items:center;width:42px;height:42px;flex:none;color:#c91a13;background:#fbd9d6;border-radius:50%}
+.hm-risk strong{display:block;font-size:.94rem;color:#1c1917}
+.hm-risk div{max-width:470px}
+
+/* ── faixa "como funciona" ─────────────────────────────────────────────── */
+.hm-steps{display:flex;align-items:center;height:92px;margin-top:22px;padding:0 28px;background:rgba(255,255,255,.7);border:1px solid rgba(28,25,23,.08);border-radius:24px;box-shadow:0 20px 50px -30px rgba(120,60,40,.5);-webkit-backdrop-filter:blur(10px);backdrop-filter:blur(10px)}
+.hm-steps-kicker{display:none}
+.hm-step{display:flex;align-items:center;flex:1;gap:14px;color:inherit;text-decoration:none}
+.hm-step b{display:grid;place-items:center;width:40px;height:40px;flex:none;color:#c91a13;font:700 .875rem var(--font-geist-mono),monospace;background:#fff;border:1.5px solid rgba(216,31,24,.35);border-radius:50%;transition:box-shadow .2s,background-color .2s,color .2s}
+.hm-step-on b{color:#fff;background:#d81f18;border-color:#d81f18;box-shadow:0 0 0 6px rgba(216,31,24,.14)}
+.hm-step:hover b{box-shadow:0 0 0 6px rgba(216,31,24,.14)}
+.hm-step strong{display:block;font:700 .94rem var(--font-display),sans-serif;color:#1c1917}
+.hm-step small{display:block;margin-top:2px;font-size:.81rem;color:#78716c}
+.hm-step-link{flex:0 0 56px;height:2px;margin:0 14px;border-radius:2px;background:linear-gradient(90deg,#d81f18,rgba(216,31,24,.2))}
+.hm-step-link-dim{opacity:.55}
+
+/* ── foco e movimento ──────────────────────────────────────────────────── */
+.hm-btn:focus-visible,.hm-step:focus-visible,.hm-menu-btn:focus-visible,.hm-nav a:focus-visible{outline:3px solid #e5b76e;outline-offset:3px}
+@keyframes hm-pulse{0%,100%{transform:translate(-50%,-50%) scale(.97);opacity:.8}50%{transform:translate(-50%,-50%) scale(1.05);opacity:1}}
+@keyframes hm-float{0%,100%{transform:translate(-50%,-50%) translateY(0)}50%{transform:translate(-50%,-50%) translateY(-7px)}}
+@keyframes hm-bar{0%,100%{transform:scaleY(.45)}50%{transform:scaleY(1)}}
+@keyframes hm-enter{from{opacity:0;transform:translateY(14px)}to{opacity:1;transform:none}}
+@keyframes hm-ping{0%{transform:scale(.6);opacity:.9}100%{transform:scale(1.5);opacity:0}}
+@keyframes hm-glow{0%,100%{box-shadow:0 18px 36px -12px rgba(216,31,24,.65),0 2px 0 rgba(255,255,255,.28) inset,0 0 0 6px rgba(216,31,24,.1)}50%{box-shadow:0 18px 40px -10px rgba(216,31,24,.8),0 2px 0 rgba(255,255,255,.28) inset,0 0 0 11px rgba(216,31,24,.05)}}
+@media (prefers-reduced-motion:reduce){
+  .hm-ring,.hm-orb,.hm-wave i,.hm-card,.hm-btn-primary,.hm-pill i::after{animation:none}
+  .hm-btn,.hm-btn-arrow svg{transition:none}
+}
+
+/* ── tablet e celular: uma coluna, nova ordem ──────────────────────────── */
+@media (max-width:1180px){
+  .home.public-shell{display:flex;flex-direction:column}
+  .hm-header{flex:none;height:auto;padding:14px 20px}
+  .hm-nav{display:none}
+  .hm-menu{display:block}
+  .hm-menu-btn{display:grid;place-items:center;width:44px;height:44px;padding:0;color:#44403c;background:rgba(255,255,255,.85);border:1px solid rgba(28,25,23,.1);border-radius:12px;cursor:pointer}
+  .hm-menu-panel{position:absolute;right:0;top:calc(100% + 8px);z-index:20;display:flex;flex-direction:column;gap:2px;min-width:240px;padding:8px;background:#fff;border:1px solid rgba(28,25,23,.1);border-radius:16px;box-shadow:0 24px 50px -20px rgba(28,25,23,.45)}
+  .hm-menu-panel a,.hm-menu-panel .text-button,.hm-menu-panel .language-button{display:flex;align-items:center;gap:10px;margin:0;padding:12px 14px;color:#292524;font:500 .94rem var(--font-geist-sans),sans-serif;text-align:left;text-decoration:none;background:transparent;border:0;border-radius:10px;box-shadow:none;cursor:pointer}
+  .hm-menu-panel a:hover,.hm-menu-panel .text-button:hover,.hm-menu-panel .language-button:hover{background:#f5f1ea}
+
+  /* o que vem depois da tela inicial fica depois de todos os itens dela (1–10) */
+  .hm-header{order:0}
+  .home .how-section{order:20}
+  .home .public-footer{order:30}
+
+  /* os blocos viram itens diretos da coluna, para poder reordenar */
+  .hm-hero,.hm-copy,.hm-scene{display:contents}
+  .hm-hero > *,.hm-copy > *,.hm-scene > *{max-width:640px;width:calc(100% - 40px);margin-left:auto;margin-right:auto}
+
+  .hm-stage{order:1;position:relative;inset:auto;height:268px;max-width:none;width:100%;margin:0;overflow:hidden;-webkit-mask-image:linear-gradient(180deg,#000 86%,transparent);mask-image:linear-gradient(180deg,#000 86%,transparent)}
+  .hm-ring{top:46%}
+  .hm-r1{width:132px;height:132px}.hm-r2{width:196px;height:196px}.hm-r3{width:262px;height:262px}.hm-r4{width:330px;height:330px}
+  .hm-orb{top:46%;width:104px;height:104px;box-shadow:0 20px 40px -16px rgba(216,31,24,.5),0 0 0 7px rgba(255,255,255,.55),0 0 0 8px rgba(216,31,24,.14)}
+  .hm-orb svg{width:62px;height:62px}
+  .hm-wave{bottom:34px;height:40px;gap:4px}
+  .hm-wave i{width:4px}
+
+  .hm-pill{order:2;align-self:center;width:auto;margin-top:2px;font-size:.78rem}
+  .hm-copy h1{order:3;margin-top:14px;text-align:center;font-size:clamp(2.5rem,10.8vw,3.4rem)}
+  .hm-lead{order:4;margin-top:14px;padding:0 6px;text-align:center;font-size:.97rem;max-width:640px}
+  .hm-cta{order:5;flex-direction:column;align-items:stretch;gap:12px;margin-top:24px}
+  .hm-btn-primary{justify-content:space-between;height:62px}
+  .hm-btn-primary .hm-btn-label{flex:1;text-align:center}
+  .hm-btn-secondary{justify-content:center;height:56px}
+  .hm-micro{order:6;justify-content:center;align-items:flex-start;margin-top:14px;padding:0 8px;text-align:center;font-size:.81rem}
+  .hm-micro svg{flex:none;margin-top:2px}
+  .hm-trust{order:7;display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-top:22px}
+  .hm-trust li{flex-direction:column;justify-content:flex-start;gap:7px;padding:12px 6px;font-size:.75rem;line-height:1.3;text-align:center}
+
+  .hm-proto{display:none}
+  .hm-quote{order:8;position:static;margin-top:30px;animation:none}
+  .hm-steps{order:9;height:auto;flex-direction:column;align-items:stretch;margin-top:18px;padding:22px 20px}
+  .hm-steps-kicker{display:block;margin-bottom:18px;font:600 .69rem var(--font-geist-mono),monospace;letter-spacing:.16em;color:#c91a13}
+  .hm-step{flex:none}
+  .hm-step-link{display:block;flex:none;width:2px;height:20px;margin:5px 0 5px 19px;background:linear-gradient(180deg,#d81f18,rgba(216,31,24,.2))}
+  .hm-risk{order:10;justify-content:flex-start;align-items:flex-start;margin-top:18px;margin-bottom:34px;padding:16px;background:rgba(251,217,214,.5);border:1px solid rgba(216,31,24,.16);border-radius:18px}
+  .hm-risk-icon{background:#fff}
+  .hm-risk div{max-width:none}
+}
