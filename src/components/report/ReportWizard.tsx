@@ -429,7 +429,11 @@ export default function ReportWizard({
                   </button>
                   {state.step < 4 ? (
                     <button type="button" className="wz-continue" onClick={next} disabled={busy}>
-                      {state.uploading ? "Enviando anexos…" : "Continuar"}
+                      {state.uploading
+                        ? "Enviando anexos…"
+                        : state.step === 3 && state.files.length === 0
+                          ? "Continuar sem anexos"
+                          : "Continuar"}
                       <span className="wz-seta">
                         <ArrowRight />
                       </span>

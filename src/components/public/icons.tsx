@@ -184,3 +184,35 @@ export const ChevronDown = ({ size }: IconProps) => (
     <path d="m6 9 6 6 6-6" />
   </Svg>
 );
+
+export const UploadCloud = ({ size }: IconProps) => (
+  <Svg size={size}>
+    <path d="M7 18a4.5 4.5 0 0 1-.6-8.96A6 6 0 0 1 18 8.5a4 4 0 0 1-.5 9.5H7Z" />
+    <path d="M12 12v6M9.5 14.5 12 12l2.5 2.5" />
+  </Svg>
+);
+export const ImageFile = ({ size }: IconProps) => (
+  <Svg size={size}>
+    <rect x="3" y="4" width="18" height="16" rx="3" />
+    <circle cx="9" cy="10" r="1.6" />
+    <path d="m21 16-5-5-8 8" />
+  </Svg>
+);
+export const DocFile = ({ size }: IconProps) => (
+  <Svg size={size}>
+    <path d="M14 3H7a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V8l-5-5Z" />
+    <path d="M14 3v5h5M9 13h6M9 17h4" />
+  </Svg>
+);
+export const AudioFile = ({ size }: IconProps) => (
+  <Svg size={size}>
+    <path d="M9 18V6l10-2v12" />
+    <circle cx="6.5" cy="18" r="2.5" />
+    <circle cx="16.5" cy="16" r="2.5" />
+  </Svg>
+);
+export const Trash = ({ size }: IconProps) => (
+  <Svg size={size}>
+    <path d="M4 7h16M10 11v6M14 11v6M6 7l1 13h10l1-13M9 7V4h6v3" />
+  </Svg>
+);
