@@ -15,6 +15,7 @@ import {
 import { createClient } from "@/lib/supabase/server";
 
 import "./admin.css";
+import "./admin-pages.css";
 
 // Depende da identidade por requisição.
 export const dynamic = "force-dynamic";
