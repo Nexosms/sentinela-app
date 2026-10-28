@@ -3,9 +3,9 @@ import { whatsappUrl } from "@/lib/contact";
 import { WhatsAppIcon } from "./icons";
 
 /**
- * Botão flutuante do WhatsApp (canto inferior direito). Só na tela inicial: no
- * formulário de relato e no acompanhamento de protocolo ele não aparece, porque
- * o WhatsApp mostra o número de quem escreve e o canal promete anonimato.
+ * Botão flutuante do WhatsApp (canto inferior direito) da tela inicial. O WhatsApp mostra o
+ * número de quem escreve e o canal promete anonimato, então o formulário de relato usa outra
+ * versão, com aviso antes de abrir (`report/WizardWhatsApp`); o acompanhamento não tem botão.
  * A conversa já abre com uma mensagem de "dúvida sobre o canal".
  */
 export default function WhatsAppFloat() {

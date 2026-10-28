@@ -17,6 +17,7 @@ import {
 import LeaveConfirm from "./LeaveConfirm";
 import ListeningPanel from "./ListeningPanel";
 import ReceiptCard from "./ReceiptCard";
+import WizardWhatsApp from "./WizardWhatsApp";
 import Step0Orientacoes from "./steps/Step0Orientacoes";
 import Step1Modalidade from "./steps/Step1Modalidade";
 import Step2OQueAconteceu from "./steps/Step2OQueAconteceu";
@@ -451,6 +452,7 @@ export default function ReportWizard({
             )}
           </section>
         </div>
+        <WizardWhatsApp />
       </main>
     </WizardProvider>
   );
