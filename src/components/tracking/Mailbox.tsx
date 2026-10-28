@@ -1,7 +1,8 @@
 "use client";
 
-import { useState } from "react";
+import { useId, useState } from "react";
 
+import { ArrowRight, Chat, Lock, ShieldCheck } from "@/components/public/icons";
 import type { TrackedMessage } from "@/lib/report/tracking";
 
 import { formatWhen, sendMessage, TrackRequestError } from "./trackingClient";
@@ -14,13 +15,8 @@ function authorLabel(message: TrackedMessage): string {
 }
 
 /**
- * Caixa postal (protótipo `ReportChannel.tsx`, l. 151).
- *
- * Três mentiras do protótipo morrem aqui: a mensagem da empresa era um
- * parágrafo escrito no código, a caixa nunca ficava vazia (mostrava sempre a
- * mensagem falsa), e o botão "Enviar resposta" só fazia `setSent(true)` — a
- * pessoa podia acreditar que tinha respondido ao canal e ser ignorada. Agora o
- * envio é um POST e a lista é recarregada do servidor.
+ * Caixa postal. O envio é um POST e a lista é recarregada do servidor: o que aparece é o que foi
+ * gravado, nunca o que o navegador achou que enviou.
  */
 export default function Mailbox({
   messages,
@@ -33,6 +29,7 @@ export default function Mailbox({
   onSent: () => Promise<void>;
   onSessionLost: (message: string) => void;
 }) {
+  const draftId = useId();
   const [draft, setDraft] = useState("");
   const [error, setError] = useState("");
   const [sending, setSending] = useState(false);
@@ -63,74 +60,89 @@ export default function Mailbox({
   }
 
   return (
-    <div className="message-box">
-      <div className="message-head">
-        <span>□</span>
+    <section className="wz-card wc-block">
+      <div className="wc-head">
+        <span className="wc-ic" aria-hidden="true">
+          <Chat size={20} />
+        </span>
         <div>
-          <strong>Caixa postal protegida</strong>
+          <h2>Caixa postal protegida</h2>
           <small>Converse sem revelar sua identidade</small>
         </div>
       </div>
+
       {messages.length === 0 ? (
-        <div className="care-note">
-          <span>✉</span>
-          <div>
-            <strong>Nenhuma mensagem ainda</strong>
-            <small>
-              Quando a equipe do canal precisar de algo, a mensagem aparece aqui. Você também pode
-              escrever primeiro.
-            </small>
-          </div>
+        <div className="wc-empty">
+          <b>Nenhuma mensagem ainda</b>
+          <p>
+            Quando a equipe do canal precisar de algo, a mensagem aparece aqui. Você também pode
+            escrever primeiro.
+          </p>
         </div>
       ) : (
-        messages.map(message => (
-          <div
-            key={message.id}
-            className={message.authorType === "reporter" ? "user-message" : "company-message"}
-          >
-            <small>
-              {authorLabel(message)} · {formatWhen(message.createdAt)}
-            </small>
-            <p>{message.body}</p>
-          </div>
-        ))
+        <div className="wc-msgs">
+          {messages.map(message => (
+            <div
+              key={message.id}
+              className={`wc-msg ${message.authorType === "reporter" ? "vc" : "eq"}`}
+            >
+              <small>
+                {authorLabel(message)} · {formatWhen(message.createdAt)}
+              </small>
+              <p>{message.body}</p>
+            </div>
+          ))}
+        </div>
       )}
+
       {canReply ? (
-        <>
+        <div className="wc-compose">
+          <label htmlFor={draftId} className="wz-sr">
+            Escreva uma resposta ou complementação
+          </label>
           <textarea
+            id={draftId}
             value={draft}
             onChange={event => setDraft(event.target.value)}
             placeholder="Escreva uma resposta ou complementação…"
             rows={4}
             disabled={sending}
-            aria-label="Escreva uma resposta ou complementação"
           />
-          {error && (
-            <div className="form-error" role="alert">
-              {error}
+          <p className="wc-tip">
+            <ShieldCheck size={16} />
+            <span>Se quiser manter o anonimato, não inclua dados que identifiquem você.</span>
+          </p>
+          {error ? (
+            <div className="wz-tf-error" role="alert">
+              <span>{error}</span>
             </div>
-          )}
-          <button
-            className="primary-button"
-            type="button"
-            onClick={() => void submit()}
-            disabled={sending || !draft.trim()}
-          >
-            {sending ? "Enviando…" : "Enviar resposta"} <span>→</span>
-          </button>
-        </>
+          ) : null}
+          <div className="wc-send">
+            <button
+              className="wz-continue wc-btn"
+              type="button"
+              onClick={() => void submit()}
+              disabled={sending || !draft.trim()}
+            >
+              {sending ? "Enviando…" : "Enviar resposta"}
+              <span className="wz-seta">
+                <ArrowRight />
+              </span>
+            </button>
+          </div>
+        </div>
       ) : (
-        <div className="care-note">
-          <span>✓</span>
+        <div className="wc-closed">
+          <Lock size={18} />
           <div>
-            <strong>Esta caixa postal foi encerrada</strong>
-            <small>
+            <b>Esta caixa postal foi encerrada</b>
+            <p>
               O caso já foi concluído, então novas mensagens não são aceitas. O histórico acima
               continua disponível enquanto você tiver o protocolo e a chave.
-            </small>
+            </p>
           </div>
         </div>
       )}
-    </div>
+    </section>
   );
 }

@@ -4,7 +4,7 @@ import { useCallback, useEffect, useState, type FormEvent } from "react";
 import { useRouter } from "next/navigation";
 
 import Brand from "@/components/brand/Brand";
-import { ArrowLeft } from "@/components/public/icons";
+import { ArrowLeft, Check, Clock } from "@/components/public/icons";
 import ListeningPanel from "@/components/report/ListeningPanel";
 import "@/components/report/wizard.css";
 import type { TrackedCase } from "@/lib/report/tracking";
@@ -124,47 +124,56 @@ export default function TrackingScreen() {
   }
 
   return (
-    <main className="tracking-shell">
-      <header className="wizard-header">
+    <main className="wz">
+      <header className="wz-header">
         <Brand />
-        <button type="button" className="quiet-link" onClick={() => router.push("/")}>
-          Voltar ao canal
+        <button type="button" className="wz-exit" onClick={() => router.push("/")}>
+          <ArrowLeft size={18} />
+          <span>
+            Voltar<span className="wz-ao"> ao canal</span>
+          </span>
         </button>
       </header>
-      <section className="mailbox">
-        <CaseHeader trackedCase={trackedCase} />
-        <SafeTimeline steps={trackedCase.timeline} />
-        {trackedCase.closureSummary && (
-          <div className="care-note">
-            <span>✓</span>
+      <div className="wc-grid">
+        <aside className="wc-side">
+          <div className="wz-card wc-summary">
+            <CaseHeader trackedCase={trackedCase} />
+            <SafeTimeline steps={trackedCase.timeline} />
+          </div>
+          {trackedCase.closureSummary && (
+            <div className="wc-note wc-outcome">
+              <Check size={26} />
+              <div>
+                <b>Desfecho comunicado</b>
+                <p>{trackedCase.closureSummary}</p>
+              </div>
+            </div>
+          )}
+          <div className="wc-note">
+            <Clock size={18} />
             <div>
-              <strong>Desfecho comunicado</strong>
-              <small>{trackedCase.closureSummary}</small>
+              <b>Última atualização: {formatWhen(trackedCase.updatedAt)}</b>
+              <p>
+                Relato recebido em {formatWhen(trackedCase.receivedAt)}. Esta consulta expira sozinha;
+                ao voltar, o protocolo e a chave serão pedidos de novo.
+              </p>
             </div>
           </div>
-        )}
-        <Mailbox
-          messages={trackedCase.messages}
-          canReply={trackedCase.canReply}
-          onSent={refresh}
-          onSessionLost={dropSession}
-        />
-        <EvidenceList
-          evidence={trackedCase.evidence}
-          canReply={trackedCase.canReply}
-          onUploaded={refresh}
-        />
-        <div className="care-note">
-          <span>◔</span>
-          <div>
-            <strong>Última atualização: {formatWhen(trackedCase.updatedAt)}</strong>
-            <small>
-              Relato recebido em {formatWhen(trackedCase.receivedAt)}. Esta consulta expira
-              sozinha; ao voltar, o protocolo e a chave serão pedidos de novo.
-            </small>
-          </div>
+        </aside>
+        <div className="wc-col">
+          <Mailbox
+            messages={trackedCase.messages}
+            canReply={trackedCase.canReply}
+            onSent={refresh}
+            onSessionLost={dropSession}
+          />
+          <EvidenceList
+            evidence={trackedCase.evidence}
+            canReply={trackedCase.canReply}
+            onUploaded={refresh}
+          />
         </div>
-      </section>
+      </div>
     </main>
   );
 }

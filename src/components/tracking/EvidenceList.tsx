@@ -2,6 +2,17 @@
 
 import { useState } from "react";
 
+import {
+  Alert,
+  ArrowRight,
+  AudioFile,
+  Check,
+  DocFile,
+  ImageFile,
+  Paperclip,
+  Trash,
+  UploadCloud,
+} from "@/components/public/icons";
 import { complementEvidence, validatePickedFiles } from "@/components/report/UploadClient";
 import type { TrackedEvidence } from "@/lib/report/tracking";
 
@@ -13,7 +24,19 @@ type PickedFile = { clientId: string; file: File; progress: number };
 function sizeLabel(bytes: number): string {
   return bytes < 1024 * 1024
     ? `${Math.max(1, Math.round(bytes / 1024))} KB`
-    : `${(bytes / 1024 / 1024).toFixed(2)} MB`;
+    : `${(bytes / 1024 / 1024).toLocaleString("pt-BR", { minimumFractionDigits: 2, maximumFractionDigits: 2 })} MB`;
+}
+
+/** Ícone e cor pela extensão: o servidor devolve só o nome do arquivo, não o tipo. */
+function kind(name: string): { Icon: typeof ImageFile; tint: string } {
+  const ext = name.split(".").pop()?.toLowerCase() ?? "";
+  if (["png", "jpg", "jpeg", "gif", "webp", "heic", "bmp"].includes(ext)) {
+    return { Icon: ImageFile, tint: "wz-t-red" };
+  }
+  if (["mp3", "m4a", "wav", "ogg", "aac", "mp4", "mov", "webm", "mkv"].includes(ext)) {
+    return { Icon: AudioFile, tint: "wz-t-amber" };
+  }
+  return { Icon: DocFile, tint: "wz-t-red" };
 }
 
 /**
@@ -76,59 +99,107 @@ export default function EvidenceList({
     }
   }
 
+  const total = evidence.length;
+  const rejectedText = rejected.length
+    ? `Não foi possível anexar: ${rejected.join("; ")}. Nada foi enviado desses arquivos.`
+    : "";
+
   return (
-    <>
-      <span className="section-kicker">EVIDÊNCIAS DO CASO</span>
-      <div className="file-list">
-        {evidence.map(item => (
-          <div key={item.id}>
-            <span>▧</span>
-            <b>
-              {item.filename}
-              <small>
-                {sizeLabel(item.sizeBytes)} · {formatWhen(item.createdAt)} ·{" "}
-                {item.verified ? "integridade verificada" : "integridade em verificação"}
-              </small>
-            </b>
-          </div>
-        ))}
-        {picked.map(item => (
-          <div key={item.clientId}>
-            <span>▧</span>
-            <b>
-              {item.file.name}
-              <small>
-                {sizeLabel(item.file.size)} ·{" "}
-                {sending ? `enviando… ${item.progress}%` : "ainda não enviado"}
-              </small>
-            </b>
-            <button
-              type="button"
-              onClick={() => setPicked(current => current.filter(f => f.clientId !== item.clientId))}
-              aria-label={`Remover ${item.file.name}`}
-              disabled={sending}
-            >
-              ×
-            </button>
-          </div>
-        ))}
+    <section className="wz-card wc-block">
+      <div className="wc-head">
+        <span className="wc-ic" aria-hidden="true">
+          <Paperclip size={20} />
+        </span>
+        <div>
+          <h2>
+            Evidências do caso{total > 0 ? <em>{total}</em> : null}
+          </h2>
+          <small>Cada arquivo tem a integridade verificada pelo servidor</small>
+        </div>
       </div>
-      {evidence.length === 0 && picked.length === 0 && (
-        <div className="care-note">
-          <span>▧</span>
-          <div>
-            <strong>Nenhum arquivo anexado</strong>
-            <small>
-              {canReply
-                ? "Se algum documento, imagem ou áudio ajudar a entender o caso, anexe abaixo."
-                : "O relato foi enviado sem anexos."}
-            </small>
-          </div>
+
+      {total > 0 || picked.length > 0 ? (
+        <ul className="wz-files wc-files" aria-label="Arquivos do caso">
+          {evidence.map(item => {
+            const { Icon, tint } = kind(item.filename);
+            return (
+              <li key={item.id} className={`wz-file ${item.verified ? "done" : ""}`}>
+                <span className={`wz-file-icon ${tint}`} aria-hidden="true">
+                  <Icon size={22} />
+                </span>
+                <div className="wz-file-info">
+                  <b>{item.filename}</b>
+                  <small>
+                    {sizeLabel(item.sizeBytes)} · {formatWhen(item.createdAt)} ·{" "}
+                    {item.verified ? "integridade verificada" : "integridade em verificação"}
+                  </small>
+                </div>
+                {item.verified ? (
+                  <span className="wz-file-status ok">
+                    <Check size={14} /> Verificado
+                  </span>
+                ) : (
+                  <span className="wz-file-status">Em verificação</span>
+                )}
+              </li>
+            );
+          })}
+          {picked.map(item => {
+            const { Icon, tint } = kind(item.file.name);
+            return (
+              <li key={item.clientId} className="wz-file">
+                <span className={`wz-file-icon ${tint}`} aria-hidden="true">
+                  <Icon size={22} />
+                </span>
+                <div className="wz-file-info">
+                  <b>{item.file.name}</b>
+                  <small>
+                    {sizeLabel(item.file.size)} ·{" "}
+                    {sending ? `enviando… ${item.progress}%` : "ainda não enviado"}
+                  </small>
+                  {sending ? (
+                    <span
+                      className="wz-bar"
+                      role="progressbar"
+                      aria-label={`Envio de ${item.file.name}`}
+                      aria-valuemin={0}
+                      aria-valuemax={100}
+                      aria-valuenow={item.progress}
+                    >
+                      <i style={{ width: `${item.progress}%` }} />
+                    </span>
+                  ) : null}
+                </div>
+                <span className="wz-file-status">{sending ? `${item.progress}%` : "Pronto"}</span>
+                <button
+                  type="button"
+                  className="wz-file-remove"
+                  onClick={() =>
+                    setPicked(current => current.filter(f => f.clientId !== item.clientId))
+                  }
+                  aria-label={`Remover ${item.file.name}`}
+                  disabled={sending}
+                >
+                  <Trash size={18} />
+                </button>
+              </li>
+            );
+          })}
+        </ul>
+      ) : (
+        <div className="wc-empty">
+          <b>Nenhum arquivo anexado</b>
+          <p>
+            {canReply
+              ? "Se algum documento, imagem ou áudio ajudar a entender o caso, anexe abaixo."
+              : "O relato foi enviado sem anexos."}
+          </p>
         </div>
       )}
+
       {canReply && (
         <>
-          <label className="dropzone">
+          <label className="wz-drop wc-drop">
             <input
               type="file"
               multiple
@@ -140,28 +211,37 @@ export default function EvidenceList({
               accept="image/*,.pdf,.doc,.docx,audio/*,video/*,.txt"
               disabled={sending}
             />
-            <span>＋</span>
+            <span className="wz-drop-icon" aria-hidden="true">
+              <UploadCloud size={26} />
+            </span>
             <strong>Anexar mais evidências</strong>
-            <small>Imagem, PDF, documento, áudio ou vídeo · até 15 MB por arquivo</small>
+            <span className="wz-drop-sub">
+              Imagem, PDF, documento, áudio ou vídeo · até 15 MB por arquivo
+            </span>
           </label>
-          {(error || rejected.length > 0) && (
-            <div className="form-error" role="alert">
-              {error ||
-                `Não foi possível anexar: ${rejected.join("; ")}. Nada foi enviado desses arquivos.`}
+          {(error || rejectedText) && (
+            <div className="wz-rejected" role="alert">
+              <Alert size={18} />
+              <span>{error || rejectedText}</span>
             </div>
           )}
           {picked.length > 0 && (
-            <button
-              className="primary-button"
-              type="button"
-              onClick={() => void upload()}
-              disabled={sending}
-            >
-              {sending ? "Enviando anexos…" : "Enviar anexos"} <span>→</span>
-            </button>
+            <div className="wc-send">
+              <button
+                className="wz-continue wc-btn"
+                type="button"
+                onClick={() => void upload()}
+                disabled={sending}
+              >
+                {sending ? "Enviando anexos…" : "Enviar anexos"}
+                <span className="wz-seta">
+                  <ArrowRight />
+                </span>
+              </button>
+            </div>
           )}
         </>
       )}
-    </>
+    </section>
   );
 }

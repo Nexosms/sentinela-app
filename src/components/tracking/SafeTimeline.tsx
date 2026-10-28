@@ -1,25 +1,28 @@
 "use client";
 
+import { Check } from "@/components/public/icons";
 import type { TimelineStep } from "@/lib/report/tracking";
 
 /**
- * Linha do tempo (protótipo `ReportChannel.tsx`, l. 151). No protótipo os quatro degraus eram JSX
- * fixo, com "Hoje, 14:32" escrito no código. Aqui cada degrau vem de
- * `case.timeline`: o servidor projeta o histórico real sobre `TIMELINE_STEPS`
- * e já entrega `detail` formatado — a tela não reformata data nenhuma.
+ * Linha do tempo. Cada degrau vem de `case.timeline`: o servidor projeta o histórico real sobre
+ * `TIMELINE_STEPS` e já entrega `detail` formatado — a tela não reformata data nenhuma.
  */
 export default function SafeTimeline({ steps }: { steps: TimelineStep[] }) {
   return (
-    <div className="safe-timeline">
+    <ol className="wc-tl" aria-label="Andamento do caso">
       {steps.map((step, index) => (
-        <article key={step.key} className={step.done ? "done" : step.current ? "current" : ""}>
-          <i>{step.done ? "✓" : index + 1}</i>
+        <li
+          key={step.key}
+          className={step.done ? "done" : step.current ? "current" : ""}
+          aria-current={step.current ? "step" : undefined}
+        >
+          <i aria-hidden="true">{step.done ? <Check size={17} /> : index + 1}</i>
           <div>
-            <strong>{step.label}</strong>
+            <b>{step.label}</b>
             <small>{step.detail}</small>
           </div>
-        </article>
+        </li>
       ))}
-    </div>
+    </ol>
   );
 }

@@ -3,18 +3,19 @@
 import type { TrackedCase } from "@/lib/report/tracking";
 
 /**
- * Cabeçalho do caso (protótipo `ReportChannel.tsx`, l. 151). O protocolo era o texto digitado no
- * formulário e o status era a string fixa "Em triagem"; agora os dois vêm do
- * registro real devolvido pelo servidor.
+ * Cabeçalho do caso. O protocolo e o status vêm do registro real devolvido pelo servidor.
+ * Concluído e arquivado ficam em verde (caso encerrado); os demais em âmbar (em andamento).
  */
 export default function CaseHeader({ trackedCase }: { trackedCase: TrackedCase }) {
+  const closed = trackedCase.status === "concluida" || trackedCase.status === "arquivada";
   return (
-    <div className="case-safe-head">
-      <div>
-        <span className="section-kicker">PROTOCOLO</span>
-        <h1>{trackedCase.protocol}</h1>
-      </div>
-      <span className="status-pill">{trackedCase.statusLabel}</span>
-    </div>
+    <>
+      <span className="wz-kicker">PROTOCOLO</span>
+      <h1 className="wc-proto">{trackedCase.protocol}</h1>
+      <span className={`wc-pill ${closed ? "ok" : ""}`}>
+        <i aria-hidden="true" />
+        {trackedCase.statusLabel}
+      </span>
+    </>
   );
 }
