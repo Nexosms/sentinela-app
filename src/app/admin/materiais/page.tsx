@@ -2,7 +2,8 @@ import type { Metadata } from "next";
 import Link from "next/link";
 
 import AdminTopbar from "@/components/admin/AdminTopbar";
-import { EmptyNote, FileCard } from "@/components/portal/parts";
+import { IconChevronRight, IconFolder, IconSearch } from "@/components/admin/shell/AdminIcons";
+import { FileCard } from "@/components/portal/parts";
 import { getStaffContext } from "@/lib/org/context";
 import { createClient } from "@/lib/supabase/server";
 import {
@@ -95,110 +96,147 @@ export default async function Page({
   const selecionada = MATERIAL_CATEGORIES.find(category => category.key === filters.categoria);
   const vazio = materials.length === 0 && pastas.length === 0;
 
+  // Contagem de cada categoria no que o cliente de fato vê (independe do filtro da tela): arquivo solto
+  // publicado ou arquivo de pasta publicada.
+  const [{ data: pastasPublicadas }, { data: todosArquivos }] = await Promise.all([
+    supabase.from("portal_folders").select("id").eq("org_id", staff.orgId).eq("is_published", true),
+    supabase
+      .from("portal_files")
+      .select("category, folder_id, is_published")
+      .eq("org_id", staff.orgId)
+      .eq("kind", "material"),
+  ]);
+  const idsPublicados = new Set((pastasPublicadas ?? []).map(folder => folder.id));
+  const porCategoria = new Map<string, number>();
+  let totalGeral = 0;
+  for (const arquivo of todosArquivos ?? []) {
+    const visivel = arquivo.folder_id ? idsPublicados.has(arquivo.folder_id) : arquivo.is_published;
+    if (!visivel) continue;
+    totalGeral += 1;
+    if (arquivo.category) porCategoria.set(arquivo.category, (porCategoria.get(arquivo.category) ?? 0) + 1);
+  }
+
   return (
     <>
       <AdminTopbar eyebrow="PORTAL" title="Materiais e Documentos" />
-      <section className="portal-page">
-        <form className="inbox-tools" method="get">
-          {filters.categoria ? <input type="hidden" name="categoria" value={filters.categoria} /> : null}
-          <div className="searchbox">
-            ⌕{" "}
-            <input
-              name="q"
-              type="search"
-              defaultValue={filters.q}
-              placeholder="Buscar material ou pasta por nome ou descrição"
-              aria-label="Buscar material"
-            />
-          </div>
-          <button type="submit">Buscar</button>
-          {filters.q ? (
-            <Link className="portal-clear" href={materialsHref(MATERIALS_PATH, filters, { q: "" })}>
-              Limpar busca
-            </Link>
-          ) : null}
-        </form>
-
-        <div className="detail-tabs">
-          <Link href={materialsHref(MATERIALS_PATH, filters, { categoria: "" })} className={filters.categoria === "" ? "active" : ""}>
-            Todos
-          </Link>
-          {MATERIAL_CATEGORIES.map(category => (
+      <div className="mt-wrap">
+        <div className="mt-barra">
+          <form className="mt-busca" method="get">
+            {filters.categoria ? <input type="hidden" name="categoria" value={filters.categoria} /> : null}
+            <label>
+              <span className="ad-sr">Buscar material</span>
+              <IconSearch size={18} />
+              <input
+                name="q"
+                type="search"
+                defaultValue={filters.q}
+                placeholder="Buscar material ou pasta por nome ou descrição"
+                aria-label="Buscar material"
+              />
+            </label>
+            <button type="submit" className="mt-b">
+              Buscar
+            </button>
+            {filters.q ? (
+              <Link className="mt-limpar" href={materialsHref(MATERIALS_PATH, filters, { q: "" })}>
+                Limpar busca
+              </Link>
+            ) : null}
+          </form>
+          <nav className="mt-chips" aria-label="Categorias">
             <Link
-              key={category.key}
-              href={materialsHref(MATERIALS_PATH, filters, { categoria: category.key })}
-              className={filters.categoria === category.key ? "active" : ""}
+              href={materialsHref(MATERIALS_PATH, filters, { categoria: "" })}
+              className={filters.categoria === "" ? "on" : ""}
+              aria-current={filters.categoria === "" ? "true" : undefined}
             >
-              {category.short}
+              Todos <b>{totalGeral}</b>
             </Link>
-          ))}
+            {MATERIAL_CATEGORIES.map(category => (
+              <Link
+                key={category.key}
+                href={materialsHref(MATERIALS_PATH, filters, { categoria: category.key })}
+                className={filters.categoria === category.key ? "on" : ""}
+                aria-current={filters.categoria === category.key ? "true" : undefined}
+              >
+                {category.short} <b>{porCategoria.get(category.key) ?? 0}</b>
+              </Link>
+            ))}
+          </nav>
         </div>
 
-        {selecionada ? <p className="lead">{selecionada.description}</p> : null}
+        {selecionada ? <p className="mt-lead">{selecionada.description}</p> : null}
 
         {vazio ? (
-          <EmptyNote
-            icon="▣"
-            title={filters.q ? "Nada encontrado para esta busca" : "Nenhum material disponível"}
-            text={
-              filters.q
+          <div className="ad-empty">
+            <span className="ad-ico" aria-hidden="true">
+              <IconFolder size={24} />
+            </span>
+            <small>PORTAL</small>
+            <h2>{filters.q ? "Nada encontrado para esta busca" : "Nenhum material disponível"}</h2>
+            <p>
+              {filters.q
                 ? "Tente outras palavras ou limpe a busca."
-                : "A equipe Nexo publica aqui os materiais de treinamento, do CDN Conecta e os cartazes de divulgação."
-            }
-          />
+                : "A equipe Nexo publica aqui os materiais de treinamento, do CDN Conecta e os cartazes de divulgação."}
+            </p>
+          </div>
         ) : (
           visiveis.map(category => {
             const doGrupo = materials.filter(material => material.category === category.key);
             const pastasDoGrupo = pastas.filter(folder => folder.category === category.key);
             if (doGrupo.length === 0 && pastasDoGrupo.length === 0) return null;
             return (
-              <div key={category.key} className="portal-group">
-                {filters.categoria ? null : (
-                  <div className="list-head">
-                    <span>{category.label}</span>
-                    <small>
-                      {pastasDoGrupo.length > 0
-                        ? `${pastasDoGrupo.length} pasta${pastasDoGrupo.length === 1 ? "" : "s"} · `
-                        : ""}
-                      {doGrupo.length} arquivo{doGrupo.length === 1 ? "" : "s"}
-                    </small>
+              <section key={category.key} className="mt-sec">
+                <div className="mt-cab">
+                  <div>
+                    <small>{category.short.toUpperCase()}</small>
+                    <h2>{category.label}</h2>
                   </div>
-                )}
-                <div className="portal-list">
-                  {pastasDoGrupo.map(folder => {
-                    const total = arquivosPorPasta.get(folder.id) ?? 0;
-                    return (
-                      <Link key={folder.id} className="portal-meeting-card" href={folderPath(folder.id)}>
-                        <span className="portal-date" aria-hidden="true">
-                          <b>▣</b>
-                        </span>
-                        <div className="portal-meeting-card-body">
-                          <strong>{folder.name}</strong>
-                          <small>
-                            {monthRefLabel(folder.reference_month)} · {total} arquivo{total === 1 ? "" : "s"}
-                          </small>
-                        </div>
-                        <span className="portal-chevron" aria-hidden="true">
-                          ›
-                        </span>
-                      </Link>
-                    );
-                  })}
-                  {doGrupo.map(material => (
-                    <FileCard key={material.id} file={material}>
-                      {material.folder_id ? (
-                        <div className="portal-badges">
-                          <span className="risk arquivada">▣ {nomeDaPasta.get(material.folder_id)}</span>
-                        </div>
-                      ) : null}
-                    </FileCard>
-                  ))}
+                  <span className="mt-n">
+                    {pastasDoGrupo.length > 0
+                      ? `${pastasDoGrupo.length} pasta${pastasDoGrupo.length === 1 ? "" : "s"} · `
+                      : ""}
+                    {doGrupo.length} arquivo{doGrupo.length === 1 ? "" : "s"}
+                  </span>
                 </div>
-              </div>
+                {pastasDoGrupo.length > 0 ? (
+                  <div className="mt-pastas">
+                    {pastasDoGrupo.map(folder => {
+                      const total = arquivosPorPasta.get(folder.id) ?? 0;
+                      return (
+                        <Link key={folder.id} className="mt-pasta" href={folderPath(folder.id)}>
+                          <span className="mt-pi" aria-hidden="true">
+                            <IconFolder size={24} />
+                          </span>
+                          <div>
+                            <strong>{folder.name}</strong>
+                            <small>
+                              {monthRefLabel(folder.reference_month)} · {total} arquivo{total === 1 ? "" : "s"}
+                            </small>
+                          </div>
+                          <IconChevronRight />
+                        </Link>
+                      );
+                    })}
+                  </div>
+                ) : null}
+                {doGrupo.length > 0 ? (
+                  <div className="mt-grid">
+                    {doGrupo.map(material => (
+                      <FileCard key={material.id} file={material}>
+                        {material.folder_id ? (
+                          <div className="portal-badges">
+                            <span className="risk arquivada">{nomeDaPasta.get(material.folder_id)}</span>
+                          </div>
+                        ) : null}
+                      </FileCard>
+                    ))}
+                  </div>
+                ) : null}
+              </section>
             );
           })
         )}
-      </section>
+      </div>
     </>
   );
 }

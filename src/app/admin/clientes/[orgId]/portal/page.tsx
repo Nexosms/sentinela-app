@@ -9,8 +9,16 @@ import {
   PastaForm,
   ReuniaoForm,
 } from "@/components/admin/portal/PortalForms";
-import { EmptyNote, FileCard } from "@/components/portal/parts";
-import { formatDateTime, todayInSaoPaulo } from "@/lib/admin/labels";
+import {
+  IconBack,
+  IconChevronRight,
+  IconEye,
+  IconEyeOff,
+  IconFolder,
+  IconShield,
+} from "@/components/admin/shell/AdminIcons";
+import { EmptyNote, ManageRow } from "@/components/portal/parts";
+import { formatDateOnly, formatDateTime, todayInSaoPaulo } from "@/lib/admin/labels";
 import { isNexoAdmin } from "@/lib/org/context";
 import { createClient } from "@/lib/supabase/server";
 import {
@@ -118,30 +126,60 @@ export default async function PortalAdminPage({
   for (const row of folderFiles ?? []) {
     if (row.folder_id) folderCount.set(row.folder_id, (folderCount.get(row.folder_id) ?? 0) + 1);
   }
+  // Resumo da aba de materiais: o que o cliente já vê, o que ainda é rascunho, pastas e a última publicação.
+  const [{ data: todasPastas }, { data: todosArquivos }] =
+    aba === "materiais"
+      ? await Promise.all([
+          supabase.from("portal_folders").select("id, is_published").eq("org_id", orgId),
+          supabase
+            .from("portal_files")
+            .select("folder_id, is_published, published_at")
+            .eq("org_id", orgId)
+            .eq("kind", "material"),
+        ])
+      : [{ data: null }, { data: null }];
+  const pastaPublicada = new Map((todasPastas ?? []).map(folder => [folder.id, folder.is_published]));
+  let visiveis = 0;
+  let rascunhos = 0;
+  let ultimaPublicacao: string | null = null;
+  for (const arquivo of todosArquivos ?? []) {
+    // Visível ao cliente: solto e publicado, ou dentro de pasta publicada.
+    const visivel = arquivo.folder_id ? pastaPublicada.get(arquivo.folder_id) === true : arquivo.is_published;
+    if (visivel) {
+      visiveis += 1;
+      if (!ultimaPublicacao || arquivo.published_at > ultimaPublicacao) ultimaPublicacao = arquivo.published_at;
+    } else {
+      rascunhos += 1;
+    }
+  }
   const [anoHoje, mesHoje] = todayInSaoPaulo().split("-");
 
   return (
     <>
       <AdminTopbar eyebrow="NEXO" title={`Portal · ${org.trade_name}`} />
       <section className="portal-page">
-        <Link className="quiet-link" href={`/admin/clientes/${orgId}`}>
-          ← Voltar para {org.trade_name}
+        <Link className="mt-voltar" href={`/admin/clientes/${orgId}`}>
+          <IconBack />
+          Voltar para {org.trade_name}
         </Link>
 
-        <div className="privacy-note">
-          <b>Tudo aqui pertence a {org.trade_name}</b>
-          <p>
-            O que for cadastrado nesta tela só aparece no portal dessa empresa, e só depois de marcado
-            como visível. Para ver como o cliente enxerga, entre na empresa e abra Minhas Reuniões ou
-            Materiais e Documentos.
-          </p>
+        <div className="mt-aviso">
+          <IconShield size={20} />
+          <div>
+            <b>Tudo aqui pertence a {org.trade_name}</b>
+            <p>
+              O que for cadastrado nesta tela só aparece no portal dessa empresa, e só depois de marcado
+              como visível. Para ver como o cliente enxerga, entre na empresa e abra Minhas Reuniões ou
+              Materiais e Documentos.
+            </p>
+          </div>
         </div>
 
-        <div className="detail-tabs">
-          <Link href={base} className={aba === "reunioes" ? "active" : ""}>
+        <div className="mt-abas">
+          <Link href={base} className={aba === "reunioes" ? "on" : ""}>
             Reuniões
           </Link>
-          <Link href={`${base}?aba=materiais`} className={aba === "materiais" ? "active" : ""}>
+          <Link href={`${base}?aba=materiais`} className={aba === "materiais" ? "on" : ""}>
             Materiais e documentos
           </Link>
         </div>
@@ -191,26 +229,47 @@ export default async function PortalAdminPage({
           </>
         ) : (
           <>
-            <div className="detail-tabs portal-subtabs">
-              <Link href={`${base}?aba=materiais`} className={filters.categoria === "" ? "active" : ""}>
+            <div className="mt-resumo">
+              <div>
+                <b>{visiveis}</b>
+                <span>arquivo{visiveis === 1 ? "" : "s"} visíve{visiveis === 1 ? "l" : "is"}</span>
+              </div>
+              <div>
+                <b className={rascunhos > 0 ? "am" : undefined}>{rascunhos}</b>
+                <span>em rascunho</span>
+              </div>
+              <div>
+                <b>{(todasPastas ?? []).length}</b>
+                <span>pasta{(todasPastas ?? []).length === 1 ? "" : "s"}</span>
+              </div>
+              <div>
+                <b>{ultimaPublicacao ? formatDateOnly(ultimaPublicacao) : "—"}</b>
+                <span>última publicação</span>
+              </div>
+            </div>
+
+            <nav className="mt-chips solto" aria-label="Categorias">
+              <Link href={`${base}?aba=materiais`} className={filters.categoria === "" ? "on" : ""}>
                 Todas
               </Link>
               {MATERIAL_CATEGORIES.map(category => (
                 <Link
                   key={category.key}
                   href={`${base}?aba=materiais&categoria=${category.key}`}
-                  className={filters.categoria === category.key ? "active" : ""}
+                  className={filters.categoria === category.key ? "on" : ""}
                 >
                   {category.short}
                 </Link>
               ))}
-            </div>
+            </nav>
 
             {mostraPastas ? (
-              <>
-                <div className="list-head">
-                  <span>Pastas · CDN Conecta</span>
-                  <small>Uma por campanha mensal</small>
+              <section className="mt-sec">
+                <div className="mt-cab">
+                  <div>
+                    <small>CDN CONECTA</small>
+                    <h2>Pastas · uma por campanha mensal</h2>
+                  </div>
                 </div>
                 {(folders ?? []).length === 0 ? (
                   <EmptyNote
@@ -219,81 +278,92 @@ export default async function PortalAdminPage({
                     text="Crie a primeira abaixo (ex.: a campanha do mês) e envie os arquivos dentro dela."
                   />
                 ) : (
-                  <div className="portal-list">
-                    {(folders ?? []).map(folder => (
-                      <Link
-                        key={folder.id}
-                        className="portal-meeting-row"
-                        href={portalAdminFolderPath(orgId, folder.id)}
-                      >
-                        <div>
-                          <strong>▣ {folder.name}</strong>
-                          <small>
-                            {monthRefLabel(folder.reference_month)} · {folderCount.get(folder.id) ?? 0} arquivo
-                            {(folderCount.get(folder.id) ?? 0) === 1 ? "" : "s"}
-                          </small>
-                        </div>
-                        <span className={folder.is_published ? "risk baixo" : "risk moderado"}>
-                          {folder.is_published ? "Visível" : "Rascunho"}
-                        </span>
-                      </Link>
-                    ))}
+                  <div className="mt-pastas">
+                    {(folders ?? []).map(folder => {
+                      const total = folderCount.get(folder.id) ?? 0;
+                      return (
+                        <Link key={folder.id} className="mt-pasta" href={portalAdminFolderPath(orgId, folder.id)}>
+                          <span className="mt-pi" aria-hidden="true">
+                            <IconFolder size={24} />
+                          </span>
+                          <div>
+                            <strong>{folder.name}</strong>
+                            <small>
+                              {monthRefLabel(folder.reference_month)} · {total} arquivo{total === 1 ? "" : "s"}
+                            </small>
+                            <span className={`mt-est ${folder.is_published ? "ok" : "rasc"}`}>
+                              {folder.is_published ? <IconEye size={15} /> : <IconEyeOff />}
+                              {folder.is_published ? "Visível" : "Rascunho"}
+                            </span>
+                          </div>
+                          <IconChevronRight />
+                        </Link>
+                      );
+                    })}
                   </div>
                 )}
                 <PastaForm orgId={orgId} defaultMonth={String(Number(mesHoje))} defaultYear={anoHoje} />
-                <div className="list-head">
-                  <span>Materiais soltos</span>
-                  <small>Arquivos fora de pasta</small>
-                </div>
-              </>
+              </section>
             ) : null}
 
-            {(materials ?? []).length === 0 ? (
-              <EmptyNote
-                icon="▣"
-                title="Nenhum material solto nesta categoria"
-                text="Use o formulário abaixo para publicar o primeiro arquivo."
-              />
-            ) : (
-              <div className="portal-list">
-                {(materials ?? []).map(material => (
-                  <FileCard key={material.id} file={material}>
-                    <div className="portal-badges">
-                      <span className="risk arquivada">{categoryLabel(material.category ?? "")}</span>
-                      <span className={material.is_published ? "risk baixo" : "risk moderado"}>
-                        {material.is_published ? "Visível" : "Rascunho"}
-                      </span>
-                    </div>
-                    <details className="portal-edit">
-                      <summary>Editar, substituir ou excluir</summary>
-                      <ArquivoEditor
-                        orgId={orgId}
-                        file={{
-                          id: material.id,
-                          kind: "material",
-                          category: material.category,
-                          title: material.title,
-                          description: material.description,
-                          publishedAt: material.published_at,
-                          filename: material.filename,
-                          mimeType: material.mime_type,
-                          sizeBytes: material.size_bytes,
-                          isPublished: material.is_published,
-                        }}
-                      />
-                    </details>
-                  </FileCard>
-                ))}
+            <section className="mt-sec">
+              <div className="mt-cab">
+                <div>
+                  <small>FORA DE PASTA</small>
+                  <h2>Materiais soltos</h2>
+                </div>
+                <span className="mt-n">
+                  {(materials ?? []).length} arquivo{(materials ?? []).length === 1 ? "" : "s"}
+                </span>
               </div>
-            )}
+              {(materials ?? []).length === 0 ? (
+                <EmptyNote
+                  icon="▣"
+                  title="Nenhum material solto nesta categoria"
+                  text="Use o formulário abaixo para publicar o primeiro arquivo."
+                />
+              ) : (
+                <div className="mt-lista">
+                  {(materials ?? []).map(material => (
+                    <ManageRow
+                      key={material.id}
+                      file={material}
+                      categoria={categoryLabel(material.category ?? "")}
+                      visible={material.is_published}
+                    >
+                      <details className="portal-edit">
+                        <summary>Editar, substituir ou excluir</summary>
+                        <ArquivoEditor
+                          orgId={orgId}
+                          file={{
+                            id: material.id,
+                            kind: "material",
+                            category: material.category,
+                            title: material.title,
+                            description: material.description,
+                            publishedAt: material.published_at,
+                            filename: material.filename,
+                            mimeType: material.mime_type,
+                            sizeBytes: material.size_bytes,
+                            isPublished: material.is_published,
+                          }}
+                        />
+                      </details>
+                    </ManageRow>
+                  ))}
+                </div>
+              )}
+            </section>
 
-            <NovoArquivoForm
-              orgId={orgId}
-              kind="material"
-              defaultCategory={filters.categoria}
-              titulo="Novo material"
-              dica="Escolha o arquivo, preencha título e categoria e publique. Aceita PDF, Word, Excel, PowerPoint, imagens, áudio e vídeo."
-            />
+            <section className="mt-sec">
+              <NovoArquivoForm
+                orgId={orgId}
+                kind="material"
+                defaultCategory={filters.categoria}
+                titulo="Novo material"
+                dica="Escolha o arquivo, preencha título e categoria e publique. Aceita PDF, Word, Excel, PowerPoint, imagens, áudio e vídeo."
+              />
+            </section>
           </>
         )}
       </section>

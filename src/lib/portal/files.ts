@@ -141,3 +141,24 @@ export function formatSize(bytes: number): string {
 export function fileHref(id: string, options: { inline?: boolean } = {}): string {
   return `/api/portal/files/${id}${options.inline ? "?inline=1" : ""}`;
 }
+
+export type FileVisual = {
+  /** Classe de cor do quadro (`mt-t-*`). */
+  cls: string;
+  /** Qual ícone desenhar. */
+  icon: "pdf" | "presentation" | "doc" | "sheet" | "video" | "audio" | "image" | "generic";
+};
+
+/** Cor e ícone do quadro do arquivo, pelo tipo. Só aparência; quem decide o que abrir é `previewKind`. */
+export function fileVisual(mime: string): FileVisual {
+  const ext = PORTAL_MIME[mime] ?? "";
+  if (ext === "pdf") return { cls: "mt-t-pdf", icon: "pdf" };
+  if (ext === "ppt" || ext === "pptx") return { cls: "mt-t-ppt", icon: "presentation" };
+  if (ext === "doc" || ext === "docx") return { cls: "mt-t-doc", icon: "doc" };
+  if (ext === "xls" || ext === "xlsx" || ext === "csv") return { cls: "mt-t-xls", icon: "sheet" };
+  const kind = previewKind(mime);
+  if (kind === "video") return { cls: "mt-t-vid", icon: "video" };
+  if (kind === "audio") return { cls: "mt-t-aud", icon: "audio" };
+  if (kind === "image") return { cls: "mt-t-img", icon: "image" };
+  return { cls: "mt-t-gen", icon: "generic" };
+}

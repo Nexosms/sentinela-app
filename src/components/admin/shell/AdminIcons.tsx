@@ -200,3 +200,57 @@ export function NavIcon({ name, size }: { name: string; size?: number }) {
       return <IconDoc size={size} />;
   }
 }
+
+export const IconPresentation = ({ size }: P) => (
+  <Svg size={size}>
+    <rect x="3" y="4" width="18" height="13" rx="2.5" />
+    <path d="M12 17v3M8 20h8M8 13l2.5-3 2 2 3.5-4" />
+  </Svg>
+);
+export const IconVideo = ({ size }: P) => (
+  <Svg size={size}>
+    <rect x="3" y="5" width="18" height="14" rx="3" />
+    <path d="m10 9.5 5 2.5-5 2.5v-5Z" />
+  </Svg>
+);
+export const IconAudio = ({ size }: P) => (
+  <Svg size={size}>
+    <path d="M9 18V6l10-2v12" />
+    <circle cx="6.5" cy="18" r="2.5" />
+    <circle cx="16.5" cy="16" r="2.5" />
+  </Svg>
+);
+export const IconImage = ({ size }: P) => (
+  <Svg size={size}>
+    <rect x="3" y="4" width="18" height="16" rx="3" />
+    <circle cx="9" cy="10" r="1.6" />
+    <path d="m21 16-5-5-8 8" />
+  </Svg>
+);
+export const IconSheet = ({ size }: P) => (
+  <Svg size={size}>
+    <rect x="4" y="4" width="16" height="16" rx="3" />
+    <path d="M4 10h16M4 15h16M10 4v16" />
+  </Svg>
+);
+export const IconEye = ({ size }: P) => (
+  <Svg size={size ?? 17}>
+    <path d="M2 12s3.6-7 10-7 10 7 10 7-3.6 7-10 7S2 12 2 12Z" />
+    <circle cx="12" cy="12" r="3" />
+  </Svg>
+);
+export const IconEyeOff = ({ size }: P) => (
+  <Svg size={size ?? 16}>
+    <path d="M3 3l18 18M10.6 5.1A10 10 0 0 1 12 5c6.4 0 10 7 10 7a17 17 0 0 1-3.2 4.1M6.5 6.6A16.7 16.7 0 0 0 2 12s3.6 7 10 7c1.6 0 3-.4 4.3-1M9.9 9.9a3 3 0 0 0 4.2 4.2" />
+  </Svg>
+);
+export const IconDownload = ({ size }: P) => (
+  <Svg size={size ?? 17}>
+    <path d="M12 4v11M7.5 10.5 12 15l4.5-4.5M5 20h14" />
+  </Svg>
+);
+export const IconPlus = ({ size }: P) => (
+  <Svg size={size ?? 18} stroke={2.2}>
+    <path d="M12 5v14M5 12h14" />
+  </Svg>
+);
