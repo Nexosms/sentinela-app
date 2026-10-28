@@ -4,6 +4,9 @@ import { useCallback, useEffect, useState, type FormEvent } from "react";
 import { useRouter } from "next/navigation";
 
 import Brand from "@/components/brand/Brand";
+import { ArrowLeft } from "@/components/public/icons";
+import ListeningPanel from "@/components/report/ListeningPanel";
+import "@/components/report/wizard.css";
 import type { TrackedCase } from "@/lib/report/tracking";
 
 import CaseHeader from "./CaseHeader";
@@ -88,6 +91,38 @@ export default function TrackingScreen() {
     }
   }
 
+  // Consulta: já no visual novo (mesma moldura do formulário de relato). A tela do caso, mais
+  // abaixo, ainda usa a moldura antiga até a sua vez.
+  if (!trackedCase) {
+    return (
+      <main className="wz">
+        <header className="wz-header">
+          <Brand />
+          <button type="button" className="wz-exit" onClick={() => router.push("/")}>
+            <ArrowLeft size={18} />
+            <span>
+              Voltar<span className="wz-ao"> ao canal</span>
+            </span>
+          </button>
+        </header>
+        <div className="wz-body">
+          <ListeningPanel
+            title="Seu relato está seguro."
+            text="Aqui você acompanha o andamento e conversa com a equipe, sem revelar quem é."
+            note="Nenhuma informação do caso é enviada por e-mail ou SMS."
+          />
+          <TrackForm
+            credentials={credentials}
+            setCredentials={setCredentials}
+            error={error}
+            loading={loading}
+            onSubmit={handleTrack}
+          />
+        </div>
+      </main>
+    );
+  }
+
   return (
     <main className="tracking-shell">
       <header className="wizard-header">
@@ -96,50 +131,40 @@ export default function TrackingScreen() {
           Voltar ao canal
         </button>
       </header>
-      {!trackedCase ? (
-        <TrackForm
-          credentials={credentials}
-          setCredentials={setCredentials}
-          error={error}
-          loading={loading}
-          onSubmit={handleTrack}
-        />
-      ) : (
-        <section className="mailbox">
-          <CaseHeader trackedCase={trackedCase} />
-          <SafeTimeline steps={trackedCase.timeline} />
-          {trackedCase.closureSummary && (
-            <div className="care-note">
-              <span>✓</span>
-              <div>
-                <strong>Desfecho comunicado</strong>
-                <small>{trackedCase.closureSummary}</small>
-              </div>
-            </div>
-          )}
-          <Mailbox
-            messages={trackedCase.messages}
-            canReply={trackedCase.canReply}
-            onSent={refresh}
-            onSessionLost={dropSession}
-          />
-          <EvidenceList
-            evidence={trackedCase.evidence}
-            canReply={trackedCase.canReply}
-            onUploaded={refresh}
-          />
+      <section className="mailbox">
+        <CaseHeader trackedCase={trackedCase} />
+        <SafeTimeline steps={trackedCase.timeline} />
+        {trackedCase.closureSummary && (
           <div className="care-note">
-            <span>◔</span>
+            <span>✓</span>
             <div>
-              <strong>Última atualização: {formatWhen(trackedCase.updatedAt)}</strong>
-              <small>
-                Relato recebido em {formatWhen(trackedCase.receivedAt)}. Esta consulta expira
-                sozinha; ao voltar, o protocolo e a chave serão pedidos de novo.
-              </small>
+              <strong>Desfecho comunicado</strong>
+              <small>{trackedCase.closureSummary}</small>
             </div>
           </div>
-        </section>
-      )}
+        )}
+        <Mailbox
+          messages={trackedCase.messages}
+          canReply={trackedCase.canReply}
+          onSent={refresh}
+          onSessionLost={dropSession}
+        />
+        <EvidenceList
+          evidence={trackedCase.evidence}
+          canReply={trackedCase.canReply}
+          onUploaded={refresh}
+        />
+        <div className="care-note">
+          <span>◔</span>
+          <div>
+            <strong>Última atualização: {formatWhen(trackedCase.updatedAt)}</strong>
+            <small>
+              Relato recebido em {formatWhen(trackedCase.receivedAt)}. Esta consulta expira
+              sozinha; ao voltar, o protocolo e a chave serão pedidos de novo.
+            </small>
+          </div>
+        </div>
+      </section>
     </main>
   );
 }

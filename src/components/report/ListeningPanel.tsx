@@ -17,7 +17,15 @@ const BARS = Array.from({ length: 21 }, (_, i) => {
   };
 });
 
-export default function ListeningPanel() {
+export default function ListeningPanel({
+  title = "Sem pressa.",
+  text = "Estamos aqui para ouvir. Você conduz no seu ritmo.",
+  note = "Nada é enviado até você confirmar, na última etapa.",
+}: {
+  title?: string;
+  text?: string;
+  note?: string;
+}) {
   return (
     <aside className="wz-aside">
       <div className="wz-stage" aria-hidden="true">
@@ -41,11 +49,11 @@ export default function ListeningPanel() {
           ))}
         </div>
       </div>
-      <h2>Sem pressa.</h2>
-      <p>Estamos aqui para ouvir. Você conduz no seu ritmo.</p>
+      <h2>{title}</h2>
+      <p>{text}</p>
       <div className="wz-safe">
         <ShieldCheck size={18} />
-        <span>Nada é enviado até você confirmar, na última etapa.</span>
+        <span>{note}</span>
       </div>
     </aside>
   );

@@ -244,3 +244,9 @@ export const Paperclip =({ size }: IconProps) => (
     <path d="m21 11-8.5 8.5a5 5 0 0 1-7-7L14 4a3.3 3.3 0 0 1 4.7 4.7l-8.5 8.5a1.7 1.7 0 0 1-2.4-2.4L15 7" />
   </Svg>
 );
+export const Mail = ({ size }: IconProps) => (
+  <Svg size={size}>
+    <rect x="3" y="5" width="18" height="14" rx="3" />
+    <path d="m4 8 8 6 8-6" />
+  </Svg>
+);
