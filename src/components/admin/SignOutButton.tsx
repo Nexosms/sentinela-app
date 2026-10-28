@@ -14,15 +14,36 @@ function PageButton() {
   );
 }
 
-/**
- * `sidebar` é o botão do menu lateral do painel; `page` é o das telas de acesso (visual novo).
- * Nos dois casos a saída é a mesma ação do servidor.
- */
-export default function SignOutButton({ variant = "sidebar" }: { variant?: "sidebar" | "page" }) {
+function IconButton() {
+  const { pending } = useFormStatus();
   return (
-    <form action={signOut}>
+    <button
+      className="ad-signout"
+      type="submit"
+      disabled={pending}
+      aria-label="Sair da conta"
+      title="Sair da conta"
+    >
+      <ExitIcon size={18} />
+    </button>
+  );
+}
+
+/**
+ * `icon` é o botão do cartão do usuário no menu do painel; `page` é o das telas de acesso;
+ * `sidebar` é o botão em texto do menu antigo. Nos três casos a saída é a mesma ação do servidor.
+ */
+export default function SignOutButton({
+  variant = "sidebar",
+}: {
+  variant?: "sidebar" | "page" | "icon";
+}) {
+  return (
+    <form action={signOut} className={variant === "icon" ? "ad-signout-form" : undefined}>
       {variant === "page" ? (
         <PageButton />
+      ) : variant === "icon" ? (
+        <IconButton />
       ) : (
         <button className="sidebar-link" type="submit">
           ⏻ Sair da conta
