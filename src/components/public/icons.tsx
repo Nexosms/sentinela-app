@@ -250,3 +250,8 @@ export const Mail = ({ size }: IconProps) => (
     <path d="m4 8 8 6 8-6" />
   </Svg>
 );
+export const LoginIcon = ({ size }: IconProps) => (
+  <Svg size={size}>
+    <path d="M15 4h4v16h-4M10 8l4 4-4 4M14 12H4" />
+  </Svg>
+);

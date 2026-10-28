@@ -1,9 +1,10 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useId, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 
+import { Alert, ArrowRight, Check, Eye, EyeOff, Key, LoginIcon, ShieldCheck } from "@/components/public/icons";
 import { createClient } from "@/lib/supabase/client";
 
 /**
@@ -36,6 +37,11 @@ export default function ConviteClient() {
   const [fase, setFase] = useState<Fase>("verificando");
   const [erro, setErro] = useState<string>("");
   const [email, setEmail] = useState<string>("");
+  const senhaId = useId();
+  const confirmId = useId();
+  const [senha, setSenha] = useState("");
+  const [confirmacao, setConfirmacao] = useState("");
+  const [mostrar, setMostrar] = useState(false);
   const rodou = useRef(false);
 
   useEffect(() => {
@@ -147,59 +153,127 @@ export default function ConviteClient() {
     router.refresh();
   }
 
+  const regraTamanho = senha.length >= MIN_SENHA;
+  const regraIgual = confirmacao.length > 0 && confirmacao === senha;
+
   return (
-    <section className="track-card">
-      <span className="section-kicker">CONVITE</span>
+    <section className="lg-card lg-card-wide">
+      <span className="lg-kicker">CONVITE</span>
       <h1>Defina a sua senha.</h1>
 
       {fase === "verificando" ? (
-        <p>Conferindo o link do convite…</p>
+        <div className="lg-loading" role="status">
+          <span className="lg-spin" aria-hidden="true" />
+          <p>Conferindo o link do convite…</p>
+        </div>
       ) : fase === "erro" ? (
         <>
-          <div className="form-error">{erro}</div>
-          <p>
-            <Link className="quiet-link" href="/login">
-              Ir para a tela de acesso
-            </Link>
-          </p>
+          <div className="lg-error" role="alert">
+            <Alert size={18} />
+            <span>{erro}</span>
+          </div>
+          <Link className="lg-secondary" href="/login">
+            <LoginIcon size={18} /> Ir para a tela de acesso
+          </Link>
         </>
       ) : (
         <>
-          <p>
+          <p className="lg-sub">
             {email ? (
               <>
-                Você foi convidado como <strong>{email}</strong>.{" "}
+                Você foi convidado como <b>{email}</b>.{" "}
               </>
             ) : null}
             Defina uma senha para entrar no painel. É por ela que você volta nas próximas vezes — o
             link do convite serve uma vez só.
           </p>
-          <div className="privacy-note">
-            <b>O que você vai ver do outro lado</b>
-            <p>
-              O painel contém denúncias reais, com relatos de assédio e dados de quem trabalha na
-              organização. Use uma senha longa e exclusiva, e não a compartilhe: cada acesso a dado
-              identificável fica registrado na trilha de auditoria com o seu nome.
-            </p>
+          <div className="lg-warn">
+            <ShieldCheck size={20} />
+            <div>
+              <b>O que você vai ver do outro lado</b>
+              <p>
+                O painel contém denúncias reais, com relatos de assédio e dados de quem trabalha na
+                organização. Use uma senha longa e exclusiva, e não a compartilhe: cada acesso a dado
+                identificável fica registrado na trilha de auditoria com o seu nome.
+              </p>
+            </div>
           </div>
           <form onSubmit={definirSenha}>
-            <label>
-              Nova senha
+            <div className="lg-field">
+              <label htmlFor={senhaId} className="lg-label">
+                <span className="lg-ic" aria-hidden="true">
+                  <Key size={19} />
+                </span>
+                Nova senha
+              </label>
+              <div className="lg-wrap">
+                <input
+                  id={senhaId}
+                  className="lg-input"
+                  name="password"
+                  type={mostrar ? "text" : "password"}
+                  autoComplete="new-password"
+                  minLength={MIN_SENHA}
+                  required
+                  value={senha}
+                  onChange={event => setSenha(event.target.value)}
+                />
+                <button
+                  type="button"
+                  className="lg-eye"
+                  onClick={() => setMostrar(value => !value)}
+                  aria-pressed={mostrar}
+                  aria-label={mostrar ? "Ocultar as senhas" : "Mostrar as senhas"}
+                >
+                  {mostrar ? <EyeOff size={19} /> : <Eye size={19} />}
+                </button>
+              </div>
+            </div>
+            <div className="lg-field">
+              <label htmlFor={confirmId} className="lg-label">
+                <span className="lg-ic" aria-hidden="true">
+                  <Key size={19} />
+                </span>
+                Repita a senha
+              </label>
               <input
-                name="password"
-                type="password"
+                id={confirmId}
+                className="lg-input"
+                name="confirm"
+                type={mostrar ? "text" : "password"}
                 autoComplete="new-password"
-                minLength={MIN_SENHA}
                 required
+                value={confirmacao}
+                onChange={event => setConfirmacao(event.target.value)}
               />
-            </label>
-            <label>
-              Repita a senha
-              <input name="confirm" type="password" autoComplete="new-password" required />
-            </label>
-            {erro ? <div className="form-error">{erro}</div> : null}
-            <button className="primary-button" type="submit" disabled={fase === "salvando"}>
-              {fase === "salvando" ? "Salvando…" : "Definir senha e entrar"} <span>→</span>
+            </div>
+
+            <ul className="lg-rules" aria-live="polite">
+              <li className={regraTamanho ? "ok" : ""}>
+                <i aria-hidden="true">
+                  <Check size={15} />
+                </i>
+                Pelo menos {MIN_SENHA} caracteres
+              </li>
+              <li className={regraIgual ? "ok" : ""}>
+                <i aria-hidden="true">
+                  <Check size={15} />
+                </i>
+                As duas senhas são iguais
+              </li>
+            </ul>
+
+            {erro ? (
+              <div key={erro} className="lg-error" role="alert">
+                <Alert size={18} />
+                <span>{erro}</span>
+              </div>
+            ) : null}
+            <button className="lg-submit" type="submit" disabled={fase === "salvando"}>
+              <span>{fase === "salvando" ? "Salvando…" : "Definir senha e entrar"}</span>
+              <span className="lg-arrow">
+                <ArrowRight />
+              </span>
             </button>
           </form>
         </>
