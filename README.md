@@ -230,6 +230,7 @@ Aplicadas via MCP do Supabase, em ordem. `supabase migration list` no projeto
 | 041 | `portal_meetings.transcript` — texto da aba Transcrição, com a mesma visibilidade e RLS da reunião |
 | 042 | `portal_folders` (pasta de materiais — campanha mensal do CDN Conecta) e `portal_files.folder_id`: a pasta tem a visibilidade e os arquivos dentro herdam; `audit_portal()` passa a cobrir a tabela |
 | 043 | Relatório mensal por cliente: `report_snapshots` ganha `is_published`/`published_at`/`published_by`; RLS reescrita (cliente lê só o publicado, a Nexo lê tudo e é a única que escreve — antes `admin`/`comite` de qualquer empresa inseriam); trigger `app.audit_snapshot()` (`snapshot.created`, `snapshot.published`, `snapshot.unpublished`, só tipo e período) e `app.write_audit` com a lista branca ampliada |
+| 044 | Contagens da Visão geral para o Comitê: função `public.rel_visao_geral_comite(p_org)` (SECURITY DEFINER, só devolve números e só para Comitê ativo da empresa pedida; `total` exato, divisões inteiras ou ocultas e subconjunto com complemento, com o mínimo `organizations.min_cell_size`; `null` = protegido). A RLS de `reports` NÃO mudou: o Comitê continua sem ler relatos. SQL em `scripts/migracoes/044_comite_contagens_visao_geral.sql` |
 
 ### Portal do Cliente
 

@@ -271,3 +271,9 @@ a.ad-case:hover{border-color:rgba(216,31,24,.3);box-shadow:0 14px 28px -22px rgb
   .ad-sidebar,.ad-topbar,.ad-ctx,.ad-backdrop{display:none!important}
   .ad-main{background:#fff}
 }
+
+/* Comitê: cartão de proteção e nota de acesso */
+.ad-protected{display:flex;gap:10px;align-items:flex-start;margin:18px 0 0;padding:14px 16px;font-size:.875rem;line-height:1.55;color:#57534e;background:#f6f1ea;border-radius:16px}
+.ad-protected svg{flex:none;margin-top:2px;color:#c91a13}
+.ad-comite-nota{display:flex;gap:10px;align-items:flex-start;margin:16px 2px 0;font-size:.84rem;line-height:1.55;color:#78716c}
+.ad-comite-nota svg{flex:none;margin-top:2px;color:#c91a13}
