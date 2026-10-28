@@ -1,121 +1,179 @@
 "use client";
 
+import { useEffect, useRef, useState, type CSSProperties } from "react";
 import { useRouter } from "next/navigation";
 
 import Brand from "@/components/brand/Brand";
+import { Alert, ArrowRight, Check, Copy, Download, ExitIcon, Lock } from "@/components/public/icons";
 
+import { downloadReceiptPdf } from "./receiptPdf";
 import type { Receipt } from "./wizardState";
+import "./wizard.css";
+
+const steps = ["Orientações", "Modalidade", "O que aconteceu", "Evidências", "Revisão"];
+
+type Field = "protocol" | "secret";
+
+function CopyButton({
+  label,
+  done,
+  onCopy,
+}: {
+  label: string;
+  done: boolean;
+  onCopy: () => void;
+}) {
+  return (
+    <button
+      type="button"
+      className={`wz-copy ${done ? "done" : ""}`}
+      onClick={onCopy}
+      aria-label={done ? `${label} copiado` : `Copiar ${label}`}
+    >
+      {done ? <Check size={17} /> : <Copy size={17} />}
+      <span>{done ? "Copiado" : "Copiar"}</span>
+    </button>
+  );
+}
 
 /**
- * Tela de comprovante (protótipo `ReportChannel.tsx`, l. 141). É uma transição de estado dentro de
- * /relato, nunca uma URL: a chave é mostrada uma única vez e não pode viajar
- * em querystring, histórico do navegador ou Referer.
+ * Tela de comprovante. É uma transição de estado dentro de /relato, nunca uma URL: a chave é
+ * mostrada uma única vez e não pode viajar em querystring, histórico do navegador ou Referer.
  */
 export default function ReceiptCard({ receipt }: { receipt: Receipt }) {
   const router = useRouter();
+  const [copied, setCopied] = useState<Field | null>(null);
+  const [pdfError, setPdfError] = useState(false);
+  const timer = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  useEffect(() => () => {
+    if (timer.current) clearTimeout(timer.current);
+  }, []);
+
+  async function copy(field: Field) {
+    try {
+      await navigator.clipboard.writeText(receipt[field]);
+    } catch {
+      // Sem permissão de área de transferência: o valor continua visível para copiar à mão.
+      return;
+    }
+    setCopied(field);
+    if (timer.current) clearTimeout(timer.current);
+    timer.current = setTimeout(() => setCopied(null), 1800);
+  }
 
   async function downloadReceipt() {
-    // PDF, não .txt: o comprovante é para o denunciante guardar/imprimir, e um
-    // arquivo de texto puro abre em qualquer editor e perde a formatação — o
-    // pedido explícito foi por um PDF de verdade.
-    const { jsPDF } = await import("jspdf");
-    const doc = new jsPDF({ unit: "pt", format: "a4" });
-    const margin = 56;
-    let y = margin;
-
-    doc.setFont("helvetica", "bold");
-    doc.setFontSize(16);
-    // Hífen simples, não travessão "—": a fonte padrão do jsPDF (Helvetica) não
-    // tem esse glifo e o descarta silenciosamente do PDF gerado.
-    doc.text("SENTINELA - CANAL DE DENÚNCIAS", margin, y);
-    y += 22;
-    doc.setFontSize(12);
-    doc.text("Comprovante de acompanhamento", margin, y);
-    y += 32;
-
-    function field(label: string, value: string) {
-      doc.setFont("helvetica", "bold");
-      doc.setFontSize(10);
-      doc.text(label, margin, y);
-      y += 16;
-      doc.setFont("helvetica", "normal");
-      doc.setFontSize(13);
-      doc.text(value, margin, y);
-      y += 28;
+    setPdfError(false);
+    try {
+      await downloadReceiptPdf(receipt, location.origin);
+    } catch {
+      setPdfError(true);
     }
-
-    field("PROTOCOLO", receipt.protocol);
-    field("CHAVE DE ACOMPANHAMENTO", receipt.secret);
-    field("DATA DE EMISSÃO", new Date().toLocaleString("pt-BR"));
-    field("STATUS INICIAL", "Relato recebido");
-    field("ACOMPANHAMENTO", `${location.origin}/acompanhar`);
-
-    doc.setFont("helvetica", "italic");
-    doc.setFontSize(10);
-    doc.text(
-      doc.splitTextToSize(
-        "Este comprovante não contém o conteúdo sensível do relato. Guarde-o em local seguro.",
-        515,
-      ),
-      margin,
-      y,
-    );
-
-    doc.save(`protocolo-sentinela-${receipt.protocol}.pdf`);
   }
 
   return (
-    <main className="wizard-shell">
-      <header className="wizard-header">
+    <main className="wz">
+      <header className="wz-header">
         <Brand />
-        <span>RELATO ENVIADO</span>
+        <span className="wz-stepchip">
+          <Lock size={15} /> RELATO ENVIADO
+        </span>
+        <span className="wz-exit wz-ghost" aria-hidden="true">
+          <ExitIcon size={18} /> Sair
+        </span>
       </header>
-      <section className="receipt-card">
-        <span className="success-mark">✓</span>
-        <span className="section-kicker">RECEBEMOS O SEU RELATO</span>
-        <h1>Guarde estes dados com cuidado.</h1>
-        <p>Por segurança, esta chave não será enviada por e-mail e não poderá ser recuperada.</p>
-        <div className="credential">
-          <small>PROTOCOLO</small>
-          <strong>{receipt.protocol}</strong>
-          <button type="button" onClick={() => navigator.clipboard?.writeText(receipt.protocol)}>
-            Copiar
-          </button>
-        </div>
-        <div className="credential">
-          <small>CHAVE DE ACOMPANHAMENTO</small>
-          <strong>{receipt.secret}</strong>
-          <button type="button" onClick={() => navigator.clipboard?.writeText(receipt.secret)}>
-            Copiar
-          </button>
-        </div>
-        {/*
-          Único desvio deliberado do JSX original. A regra `.download-receipt`
-          no globals.css só tem margin-top e três !important sobre
-          border-color/background/color — sem padding, min-height nem
-          border-radius. Esses !important existem para vencer outra classe, e a
-          única com essas declarações é `.secondary-button`. O protótipo
-          esqueceu a classe base e o botão saía como um retângulo teal sem
-          respiro. Manter o erro por fidelidade seria entregar um botão quebrado.
-        */}
-        <button
-          type="button"
-          className="secondary-button download-receipt"
-          onClick={downloadReceipt}
-        >
-          ↓ Baixar protocolo
-        </button>
-        <div className="receipt-warning">
-          <strong>Proteja seu acesso</strong>
-          <span>
-            Não compartilhe estes dados. Baixe o protocolo, faça uma captura de tela ou anote-os em
-            local seguro.
+      <nav
+        className="wz-progress"
+        aria-label="Todas as etapas concluídas"
+        style={{ "--wz-fill": "80%" } as CSSProperties}
+      >
+        <ol>
+          {steps.map(label => (
+            <li key={label} className="done">
+              <i>
+                <Check size={18} />
+              </i>
+              <b>{label}</b>
+            </li>
+          ))}
+        </ol>
+      </nav>
+      <p className="wz-step-m">
+        Relato <b>enviado</b>
+      </p>
+      <div className="wz-receipt-wrap">
+        <section className="wz-card wz-receipt">
+          <span className="wz-success" aria-hidden="true">
+            <i />
+            <i />
+            <b>
+              <Check size={34} />
+            </b>
           </span>
-        </div>
-        <button type="button" className="primary-button" onClick={() => router.push("/acompanhar")}>
-          Acompanhar agora <span>→</span>
-        </button>
-      </section>
+          <span className="wz-kicker wz-center">RECEBEMOS O SEU RELATO</span>
+          <h1 className="wz-center">Guarde estes dados com cuidado.</h1>
+          <p className="wz-lead wz-center">
+            Por segurança, esta chave não será enviada por e-mail e não poderá ser recuperada.
+          </p>
+
+          <div className="wz-cred">
+            <div className="wz-cred-in">
+              <small>PROTOCOLO</small>
+              <strong>{receipt.protocol}</strong>
+            </div>
+            <CopyButton label="protocolo" done={copied === "protocol"} onCopy={() => void copy("protocol")} />
+          </div>
+          <div className="wz-cred key">
+            <div className="wz-cred-in">
+              <small>
+                CHAVE DE ACOMPANHAMENTO <em>mostrada uma única vez</em>
+              </small>
+              <strong>{receipt.secret}</strong>
+            </div>
+            <CopyButton
+              label="chave de acompanhamento"
+              done={copied === "secret"}
+              onCopy={() => void copy("secret")}
+            />
+          </div>
+          <span className="wz-sr" role="status" aria-live="polite">
+            {copied ? "Copiado para a área de transferência." : ""}
+          </span>
+
+          <button type="button" className="wz-download" onClick={() => void downloadReceipt()}>
+            <Download size={19} /> Baixar protocolo em PDF
+          </button>
+          {pdfError ? (
+            <p className="wz-rejected" role="alert">
+              <Alert size={18} />
+              <span>
+                Não foi possível gerar o PDF agora. Copie o protocolo e a chave acima, ou faça uma captura
+                de tela.
+              </span>
+            </p>
+          ) : null}
+
+          <div className="wz-warn">
+            <Alert size={19} />
+            <div>
+              <b>Proteja seu acesso</b>
+              <p>
+                Não compartilhe estes dados. Baixe o protocolo, faça uma captura de tela ou anote-os em
+                local seguro.
+              </p>
+            </div>
+          </div>
+
+          <div className="wz-actions wz-actions-end">
+            <button type="button" className="wz-continue" onClick={() => router.push("/acompanhar")}>
+              Acompanhar agora
+              <span className="wz-seta">
+                <ArrowRight />
+              </span>
+            </button>
+          </div>
+        </section>
+      </div>
     </main>
   );
 }

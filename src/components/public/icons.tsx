@@ -228,7 +228,18 @@ export const Pencil = ({ size }: IconProps) => (
     <path d="m13.5 6.5 4 4" />
   </Svg>
 );
-export const Paperclip = ({ size }: IconProps) => (
+export const Copy = ({ size }: IconProps) => (
+  <Svg size={size}>
+    <rect x="9" y="9" width="11" height="11" rx="2.5" />
+    <path d="M5 15V6a2 2 0 0 1 2-2h9" />
+  </Svg>
+);
+export const Download = ({ size }: IconProps) => (
+  <Svg size={size}>
+    <path d="M12 4v11M7.5 10.5 12 15l4.5-4.5M5 20h14" />
+  </Svg>
+);
+export const Paperclip =({ size }: IconProps) => (
   <Svg size={size}>
     <path d="m21 11-8.5 8.5a5 5 0 0 1-7-7L14 4a3.3 3.3 0 0 1 4.7 4.7l-8.5 8.5a1.7 1.7 0 0 1-2.4-2.4L15 7" />
   </Svg>
