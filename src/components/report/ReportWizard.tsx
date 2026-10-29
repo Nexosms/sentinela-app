@@ -6,6 +6,7 @@ import { useRouter } from "next/navigation";
 import Brand from "@/components/brand/Brand";
 import { ArrowLeft, ArrowRight, Check, ExitIcon, Lock, ShieldCheck } from "@/components/public/icons";
 import type { CategoryOption } from "@/lib/report/catalog";
+import { lembrarEmpresa } from "@/lib/report/empresaLembrada";
 import {
   fieldErrors,
   step0Schema,
@@ -61,11 +62,13 @@ const GROUP_ORDER = ["violencia_conduta", "organizacao_trabalho"];
 export default function ReportWizard({
   orgSlug,
   orgName,
+  companyName,
   orgCnpjFormatted,
   categories,
 }: {
   orgSlug: string;
   orgName: string;
+  companyName: string;
   orgCnpjFormatted: string | null;
   categories: CategoryOption[];
 }) {
@@ -102,6 +105,11 @@ export default function ReportWizard({
     window.addEventListener("beforeunload", warn);
     return () => window.removeEventListener("beforeunload", warn);
   }, [state.dirty, state.receipt]);
+
+  // Quem sai para o início e volta a "Fazer um relato" cai de novo nesta empresa.
+  useEffect(() => {
+    lembrarEmpresa(orgSlug);
+  }, [orgSlug]);
 
   useEffect(() => {
     window.scrollTo({ top: 0, behavior: "smooth" });
@@ -330,7 +338,7 @@ export default function ReportWizard({
     () => ({
       state,
       dispatch,
-      org: { name: orgName, cnpjFormatted: orgCnpjFormatted },
+      org: { name: orgName, cnpjFormatted: orgCnpjFormatted, company: companyName },
       categories,
       categoryGroups,
       needsSpecification,
@@ -346,6 +354,7 @@ export default function ReportWizard({
     [
       state,
       orgName,
+      companyName,
       orgCnpjFormatted,
       categories,
       categoryGroups,

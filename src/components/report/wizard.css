@@ -551,3 +551,11 @@
   .wc-msg{max-width:94%}
   .wc-send .wc-btn{width:100%;justify-content:space-between}
 }
+
+/* revisão: empresa que recebe o relato; /relato sem link da empresa */
+.wz-org.wz-org-envio{display:flex;margin:18px 0 0;padding:12px 16px;line-height:1.5;background:#fff7e6;border-color:rgba(180,120,20,.3)}
+.wz-sem-empresa .wz-org{display:flex;margin-top:22px;line-height:1.5}
+.wz-sem-empresa-a{flex-wrap:wrap;margin-top:26px}
+.wz-sem-empresa-a a{text-decoration:none}
+.wz-org.wz-org-empresa{display:flex;margin-top:14px;line-height:1.5;color:#1c1917;background:#fff7e6;border-color:rgba(180,120,20,.3)}
+.wz-org.wz-org-empresa+.wz-org{margin-top:8px}

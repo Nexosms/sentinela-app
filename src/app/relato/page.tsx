@@ -1,19 +1,14 @@
 import type { Metadata } from "next";
 
-import RelatoPage from "@/components/report/RelatoPage";
+import RelatoSemEmpresa from "@/components/report/RelatoSemEmpresa";
 
 export const metadata: Metadata = {
   title: "Fazer um relato",
-  description:
-    "Espaço seguro e confidencial para relatar situações, condutas ou condições relacionadas ao trabalho que precisam ser conhecidas e avaliadas, com respeito, proteção e possibilidade de anonimato.",
+  description: "Use o link enviado pela sua empresa para fazer um relato com segurança e confidencialidade.",
 };
 
-/** O catálogo (categorias) muda muito pouco; 5 minutos de cache
- *  evitam uma ida ao banco a cada abertura do formulário. */
-export const revalidate = 300;
-
-/** Sem slug: aponta para a organização padrão (`publicEnv.defaultOrgSlug`) —
- *  o ambiente demo da própria Nexo. Cada empresa-cliente usa `/relato/<slug>`. */
-export default async function Page() {
-  return <RelatoPage />;
+/** Sem empresa no endereço não há formulário: cada empresa-cliente usa `/relato/<slug>`
+ *  (o demo da Nexo é `/relato/sentinela`). A tela lembra a empresa da aba ou pede o link. */
+export default function Page() {
+  return <RelatoSemEmpresa />;
 }

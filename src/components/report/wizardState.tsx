@@ -220,7 +220,8 @@ export type WizardContextValue = {
   state: WizardState;
   dispatch: Dispatch<WizardAction>;
   /** Identificação institucional de quem opera o canal, para exibir na Etapa 0. */
-  org: { name: string; cnpjFormatted: string | null };
+  /** `name`/`cnpjFormatted`: quem opera o canal. `company`: a empresa-cliente do link, para quem o relato vai. */
+  org: { name: string; cnpjFormatted: string | null; company: string };
   categories: CategoryOption[];
   categoryGroups: CategoryGroup[];
   /** Só as categorias marcadas que exigem detalhamento. */

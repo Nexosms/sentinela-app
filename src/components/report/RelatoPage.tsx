@@ -4,11 +4,11 @@ import ReportWizard from "@/components/report/ReportWizard";
 import { loadReportCatalog } from "@/lib/report/catalog";
 
 /**
- * Compartilhado por `/relato` (organização padrão, ambiente demo da Nexo) e
- * `/relato/[orgSlug]` (link de cada empresa-cliente) — mesma lógica de
- * carregar o catálogo e decidir 404, só a origem do slug muda.
+ * `/relato/[orgSlug]`: link de cada empresa-cliente. O slug é sempre explícito;
+ * não existe empresa padrão, para ninguém registrar um relato na empresa errada
+ * sem perceber. Slug inexistente ou organização inativa vira 404.
  */
-export default async function RelatoPage({ orgSlug }: { orgSlug?: string }) {
+export default async function RelatoPage({ orgSlug }: { orgSlug: string }) {
   const catalog = await loadReportCatalog(orgSlug);
   if (!catalog) notFound();
 
@@ -16,6 +16,7 @@ export default async function RelatoPage({ orgSlug }: { orgSlug?: string }) {
     <ReportWizard
       orgSlug={catalog.orgSlug}
       orgName={catalog.orgName}
+      companyName={catalog.companyName}
       orgCnpjFormatted={catalog.orgCnpjFormatted}
       categories={catalog.categories}
     />

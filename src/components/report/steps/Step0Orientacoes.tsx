@@ -17,6 +17,13 @@ export default function Step0Orientacoes() {
         Leia estas orientações. Elas explicam o que esperar deste canal e ajudam a proteger você e as
         pessoas envolvidas.
       </p>
+      <p className="wz-org wz-org-empresa">
+        <Building size={18} />
+        <span>
+          Você está fazendo um relato para <strong>{org.company}</strong>. Não é a sua empresa? Volte e
+          abra o link que ela enviou.
+        </span>
+      </p>
       <p className="wz-org">
         <Building size={18} />
         <span>

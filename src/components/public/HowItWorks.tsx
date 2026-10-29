@@ -1,6 +1,5 @@
-import Link from "next/link";
-
 import { ArrowRight, Chat, Eye, Key, ShieldCheck } from "./icons";
+import RelatoLink from "./RelatoLink";
 
 const STEPS = [
   {
@@ -74,12 +73,12 @@ export default function HowItWorks() {
           <h3>Sua voz merece ser ouvida.</h3>
           <p>Comece quando se sentir pronto(a). Você pode acompanhar depois com o seu protocolo.</p>
         </div>
-        <Link className="hm-btn-light" href="/relato">
+        <RelatoLink className="hm-btn-light">
           Fazer um relato
           <span>
             <ArrowRight />
           </span>
-        </Link>
+        </RelatoLink>
       </div>
 
       <div className="hm-legal">

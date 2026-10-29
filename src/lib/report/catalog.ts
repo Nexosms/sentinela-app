@@ -2,7 +2,6 @@ import "server-only";
 
 import { z } from "zod";
 
-import { publicEnv } from "@/lib/env";
 import { createClient } from "@/lib/supabase/server";
 
 /**
@@ -48,7 +47,10 @@ export type CategoryOption = {
 
 export type ReportCatalog = {
   orgSlug: string;
+  /** Razão social de quem opera o canal (a mesma em todas as empresas-cliente). */
   orgName: string;
+  /** Nome da empresa-cliente do link: para quem o relato será enviado. */
+  companyName: string;
   /** CNPJ já formatado (`00.000.000/0000-00`), ou `null` se a organização não tiver um cadastrado. */
   orgCnpjFormatted: string | null;
   categories: CategoryOption[];
@@ -66,9 +68,7 @@ function formatCnpj(digits: string | null): string | null {
  * empresa-cliente tem seu próprio link (`/relato/<slug>`), então um slug
  * errado ou desativado precisa virar 404, não um erro genérico.
  */
-export async function loadReportCatalog(
-  orgSlug: string = publicEnv.defaultOrgSlug,
-): Promise<ReportCatalog | null> {
+export async function loadReportCatalog(orgSlug: string): Promise<ReportCatalog | null> {
   const supabase = await createClient();
   const { data, error } = await supabase.rpc("get_report_catalog", { p_org_slug: orgSlug });
 
@@ -83,6 +83,7 @@ export async function loadReportCatalog(
   return {
     orgSlug: parsed.data.org.slug,
     orgName: parsed.data.org.legal_name,
+    companyName: parsed.data.org.name,
     orgCnpjFormatted: formatCnpj(parsed.data.org.cnpj),
     categories: parsed.data.categories.map(category => ({
       id: category.id,

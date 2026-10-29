@@ -2,6 +2,7 @@ import Link from "next/link";
 
 import { ArrowRight, Check, Clock, Heart, HeadsetLine, Lock, Search, Shield } from "./icons";
 import ListeningScene from "./ListeningScene";
+import RelatoLink from "./RelatoLink";
 
 /**
  * Tela inicial. Em computador: texto à esquerda, a cena de escuta à direita, o
@@ -27,13 +28,13 @@ export default function Hero() {
           possibilidade de anonimato.
         </p>
         <div className="hm-cta">
-          <Link className="hm-btn hm-btn-primary" href="/relato">
+          <RelatoLink className="hm-btn hm-btn-primary">
             <HeadsetLine size={22} />
             <span className="hm-btn-label">Fazer um relato</span>
             <span className="hm-btn-arrow">
               <ArrowRight />
             </span>
-          </Link>
+          </RelatoLink>
           <Link className="hm-btn hm-btn-secondary" href="/acompanhar">
             <Search />
             <span className="hm-btn-label">Acompanhar protocolo</span>

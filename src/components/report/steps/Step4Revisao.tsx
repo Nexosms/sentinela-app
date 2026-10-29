@@ -4,6 +4,7 @@ import { useState, type ReactNode } from "react";
 
 import {
   Alert,
+  Building,
   DocFile,
   ImageFile,
   Lock,
@@ -74,7 +75,7 @@ function Fact({ label, value }: { label: string; value: string }) {
 }
 
 export default function Step4Revisao() {
-  const { state, categories, dispatch } = useWizard();
+  const { state, categories, org, dispatch } = useWizard();
   const [open, setOpen] = useState(false);
 
   const goTo = (step: number) => dispatch({ type: "goTo", step });
@@ -93,6 +94,14 @@ export default function Step4Revisao() {
       <p className="wz-lead">
         Depois do envio, o relato original não poderá ser alterado. Complementações ficam registradas
         como novos eventos.
+      </p>
+
+      <p className="wz-org wz-org-envio">
+        <Building size={18} />
+        <span>
+          Este relato será enviado para <strong>{org.company}</strong>. Não é a sua empresa? Saia e abra
+          o link que ela enviou.
+        </span>
       </p>
 
       <div className="wz-rvs">
