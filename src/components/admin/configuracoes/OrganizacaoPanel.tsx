@@ -54,8 +54,9 @@ export default async function OrganizacaoPanel({ readOnly = false }: { readOnly?
           <small>PRAZO DE APURAÇÃO</small>
           <strong>{org.sla_apuracao_hours} h</strong>
           <p>
-            Tempo máximo até a conclusão do caso. Equivale a {Math.round(org.sla_apuracao_hours / 24)}{" "}
-            dias corridos.
+            Tempo máximo até a conclusão do caso, contado desde o recebimento do relato. Equivale a{" "}
+            {Math.round(org.sla_apuracao_hours / 24)} dias corridos. Vale a partir do momento em que o
+            relato sai da triagem.
           </p>
         </article>
         <article>

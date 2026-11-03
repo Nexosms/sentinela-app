@@ -7,6 +7,7 @@
  */
 
 import type { ReportStatus, RiskLevel } from "@/lib/admin/labels";
+import { prazoVencido } from "@/lib/admin/prazo";
 
 export type FilaItem = {
   id: string;
@@ -44,8 +45,8 @@ function diasEntre(deDia: string, ateDia: string): number {
   return Math.round((b - a) / 86_400_000);
 }
 
-export function estaVencido(item: Pick<FilaItem, "dueAt">, agora: Date): boolean {
-  return item.dueAt !== null && new Date(item.dueAt).getTime() < agora.getTime();
+export function estaVencido(item: Pick<FilaItem, "dueAt" | "status">, agora: Date): boolean {
+  return prazoVencido(item.status, item.dueAt, agora);
 }
 
 const CASAMENTO: Record<Exclude<FilaFiltro, "todos">, (item: FilaItem, agora: Date) => boolean> = {

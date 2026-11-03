@@ -15,7 +15,8 @@ import {
   relativeAge,
   riskClass,
 } from "@/lib/admin/labels";
-import type { ReportMode } from "@/lib/admin/labels";
+import type { ReportMode, ReportStatus } from "@/lib/admin/labels";
+import { ROTULO_PRAZO, etapaDoPrazo, prazoVencido } from "@/lib/admin/prazo";
 import { TABS, caseHref, type InboxFilters } from "@/lib/admin/inbox";
 import { RECURRENCES, RELATIONSHIPS } from "@/lib/report/schema";
 import {
@@ -48,8 +49,8 @@ function Field({ label, value }: { label: string; value: ReactNode }) {
 }
 
 /** Fora do corpo do componente: `Date.now()` em render é impureza para o compilador do React. */
-function isOverdue(dueAt: string | null): boolean {
-  return Boolean(dueAt && new Date(dueAt).getTime() < Date.now());
+function isOverdue(status: ReportStatus, dueAt: string | null): boolean {
+  return prazoVencido(status, dueAt);
 }
 
 function periodOf(report: {
@@ -137,7 +138,7 @@ export default async function CaseDetail({ id, filters }: { id: string; filters:
   const empresa = report.organizations?.trade_name ?? staff.orgName;
   const unidade = report.org_units?.name;
   const identificacao = unidade ? `${empresa} · ${unidade}` : empresa;
-  const overdue = isOverdue(report.due_at);
+  const overdue = isOverdue(report.status, report.due_at);
 
   return (
     <section className="case-detail">
@@ -218,7 +219,7 @@ export default async function CaseDetail({ id, filters }: { id: string; filters:
                 value={report.profiles?.full_name ?? "Ninguém atribuído"}
               />
               <div>
-                <small>PRAZO</small>
+                <small>{ROTULO_PRAZO[etapaDoPrazo(report.status)].toUpperCase()}</small>
                 <strong className={overdue ? "danger" : ""}>
                   {report.due_at
                     ? `${formatDate(report.due_at)}${overdue ? " · atrasado" : ""}`

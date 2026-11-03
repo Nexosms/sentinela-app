@@ -11,7 +11,9 @@ import {
   STATUS_ORDER,
   relativeAge,
   riskClass,
+  type ReportStatus,
 } from "@/lib/admin/labels";
+import { etapaDoPrazo, prazoVencido } from "@/lib/admin/prazo";
 import {
   INBOX_BOXES,
   INBOX_PATH,
@@ -29,13 +31,16 @@ import {
 function flagsOf(item: {
   retaliation: boolean;
   urgent: boolean;
+  status: ReportStatus;
   due_at: string | null;
   assigned_to: string | null;
 }): string[] {
   const flags: string[] = [];
   if (item.retaliation) flags.push("RETALIAÇÃO");
   if (item.urgent) flags.push("URGENTE");
-  if (item.due_at && new Date(item.due_at).getTime() < Date.now()) flags.push("PRAZO VENCIDO");
+  if (prazoVencido(item.status, item.due_at)) {
+    flags.push(etapaDoPrazo(item.status) === "triagem" ? "TRIAGEM ATRASADA" : "APURAÇÃO ATRASADA");
+  }
   if (!item.assigned_to) flags.push("SEM RESPONSÁVEL");
   return flags;
 }

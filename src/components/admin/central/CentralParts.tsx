@@ -2,6 +2,7 @@ import Link from "next/link";
 
 import { abrirCaso } from "@/app/admin/central/actions";
 import { RISK_LABEL, STATUS_LABEL } from "@/lib/admin/labels";
+import { etapaDoPrazo } from "@/lib/admin/prazo";
 import {
   FILA_FILTROS,
   haQuanto,
@@ -134,7 +135,10 @@ export function QueueTable({ itens, agora }: { itens: FilaItem[]; agora: Date })
                   </td>
                   <td className="ct-proto">{item.protocol}</td>
                   <td className="ct-st">{STATUS_LABEL[item.status]}</td>
-                  <td className={`ct-pz ${prazo.tom}`}>{prazo.rotulo}</td>
+                  <td className={`ct-pz ${prazo.tom}`}>
+                    {etapaDoPrazo(item.status) === "triagem" ? "Triagem" : "Apuração"} ·{" "}
+                    {prazo.rotulo}
+                  </td>
                   <td className={`ct-rs ${item.assignedTo ? "" : "sem"}`}>
                     {item.assignedTo ? (item.assigneeName ?? "Atribuído") : "Sem responsável"}
                   </td>
